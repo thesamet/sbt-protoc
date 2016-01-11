@@ -7,7 +7,7 @@ name := "sbt-protoc"
 organization := "com.trueaccord.scalapb"
 
 libraryDependencies ++= Seq(
-  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.1"
+  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.1.4"
 )
 
 scalacOptions += "-target:jvm-1.7"
