@@ -1,17 +1,27 @@
 import ReleaseTransformations._
 
-sbtPlugin := true
+organization := "com.thesamet"
 
 name := "sbt-protoc"
 
-organization := "com.trueaccord.scalapb"
-
-libraryDependencies ++= Seq(
-  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.1.4"
-)
+scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args")
 
 scalacOptions += "-target:jvm-1.7"
 
+libraryDependencies ++= Seq(
+  "com.github.os72" % "protoc-jar" % "3.0.0",
+  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.2.0"
+)
+
+sbtPlugin := true
+
+ScriptedPlugin.scriptedSettings
+
+scriptedBufferLog := false
+
+scriptedLaunchOpts <+= version( x => s"-Dplugin.version=${x}" )
+
+// Release
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
 releaseProcess := Seq[ReleaseStep](
@@ -22,10 +32,10 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  ReleaseStep(action = Command.process("publishSigned", _)),
+  ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
   setNextVersion,
   commitNextVersion,
-  pushChanges,
-  ReleaseStep(action = Command.process("sonatypeReleaseAll", _))
+  ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
+  pushChanges
 )
 
