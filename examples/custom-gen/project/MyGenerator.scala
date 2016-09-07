@@ -17,7 +17,7 @@ object MyCodeGenerator extends protocbridge.ProtocCodeGenerator with DescriptorP
         case (acc, fp) =>
           val deps = fp.getDependencyList.asScala.map(acc)
           acc + (fp.getName -> FileDescriptor.buildFrom(fp, deps.toArray))
-            }
+      }
 
     request.getFileToGenerateList.asScala.foreach {
       name =>
@@ -37,13 +37,13 @@ object MyCodeGenerator extends protocbridge.ProtocCodeGenerator with DescriptorP
       .print(fileDesc.getMessageTypes.asScala) {
         case (m, p) =>
           p.add(s"object ${m.getName}Boo {")
-           .indent
-           .add(s"type T = ${m.scalaTypeName}")
-           .add(s"val FieldCount = ${m.getFields.size}")
-           .outdent
-           .add("}")
+            .indent
+            .add(s"type T = ${m.scalaTypeName}")
+            .add(s"val FieldCount = ${m.getFields.size}")
+            .outdent
+            .add("}")
       }
-    b.setContent(fp.result)
-    b.build
+      b.setContent(fp.result)
+      b.build
   }
 }
