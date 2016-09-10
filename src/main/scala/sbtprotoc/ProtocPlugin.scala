@@ -48,9 +48,6 @@ object ProtocPlugin extends AutoPlugin {
       Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
     },
     ivyConfigurations += ProtobufConfig,
-    watchSources ++= ((PB.protoSources in Compile).value ** "*.proto").get,
-    cleanFiles <++= (PB.targets in Compile){_.map{_.outputPath}},
-    cleanFiles <+= (PB.externalIncludePath in Compile),
     PB.protocVersion := "-v300",
     PB.runProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
@@ -89,7 +86,7 @@ object ProtocPlugin extends AutoPlugin {
         incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath),
         pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance(pythonExe=pythonExe))
     } catch { case e: Exception =>
-      throw new RuntimeException("error occured while compiling protobuf files: %s" format(e.getMessage), e)
+      throw new RuntimeException("error occurred while compiling protobuf files: %s" format(e.getMessage), e)
     }
 
   private def makeArtifact(f: protocbridge.Artifact): ModuleID =
