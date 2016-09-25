@@ -21,6 +21,7 @@ object ProtocPlugin extends AutoPlugin {
 
       val runProtoc = SettingKey[Seq[String] => Int]("protoc-run-protoc", "A function that executes the protobuf compiler with the given arguments, returning the exit code of the compilation run.")
       val protocVersion = SettingKey[String]("protoc-version", "Version flag to pass to protoc-jar")
+      val pythonExe =  SettingKey[String]("python-executable", "Full path for a Python.exe (needed only on Windows)")
 
       val Target = protocbridge.Target
       val gens = protocbridge.gens
@@ -53,7 +54,8 @@ object ProtocPlugin extends AutoPlugin {
     PB.protocVersion := "-v300",
     PB.runProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
-    }
+    },
+    PB.pythonExe := "python"
   )
 
   // Settings that are applied at configuration (Compile, Test) scope.
@@ -80,11 +82,12 @@ object ProtocPlugin extends AutoPlugin {
 
   case class UnpackedDependencies(dir: File, files: Seq[File])
 
-  private[this] def executeProtoc(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], log: Logger) : Int =
+  private[this] def executeProtoc(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, log: Logger) : Int =
     try {
       val incPath = includePaths.map("-I" + _.getCanonicalPath)
       protocbridge.ProtocBridge.run(protocCommand, targets,
-        incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath))
+        incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath),
+        pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance(pythonExe=pythonExe))
     } catch { case e: Exception =>
       throw new RuntimeException("error occured while compiling protobuf files: %s" format(e.getMessage), e)
     }
@@ -93,7 +96,7 @@ object ProtocPlugin extends AutoPlugin {
     ModuleID(f.groupId, f.artifactId, f.version, crossVersion =
       if (f.crossVersion) CrossVersion.binary else CrossVersion.Disabled)
 
-  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], log: Logger) = {
+  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, log: Logger) = {
     val generatedTargetDirs = targets.map(_.outputPath)
     generatedTargetDirs.foreach{ targetDir =>
       IO.delete(targetDir)
@@ -106,7 +109,7 @@ object ProtocPlugin extends AutoPlugin {
       protocOptions.map("\t"+_).foreach(log.debug(_))
       schemas.foreach(schema => log.info("Compiling schema %s" format schema))
 
-      val exitCode = executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, log)
+      val exitCode = executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, pythonExe, log)
       if (exitCode != 0)
         sys.error("protoc returned exit code: %d" format exitCode)
 
@@ -135,7 +138,14 @@ object ProtocPlugin extends AutoPlugin {
       .map(_.getAbsoluteFile))
     val cachedCompile = FileFunction.cached(
       (streams in key).value.cacheDirectory / "protobuf", inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
-      compile((PB.runProtoc in key).value, schemas, (PB.includePaths in key).value, (PB.protocOptions in key).value, (PB.targets in key).value, (streams in key).value.log)
+      compile(
+        (PB.runProtoc in key).value,
+        schemas,
+        (PB.includePaths in key).value,
+        (PB.protocOptions in key).value,
+        (PB.targets in key).value,
+        (PB.pythonExe in key).value,
+        (streams in key).value.log)
     }
     cachedCompile(schemas).toSeq
   }

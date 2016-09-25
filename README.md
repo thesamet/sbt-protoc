@@ -38,7 +38,7 @@ PB.targets in Compile := Seq(
 )
 ```
 
-To generate Java + Scala with java conversions:
+To generate Java + Scala with Java conversions:
 ```
 PB.targets in Compile := Seq(
   PB.gens.java -> (sourceManaged in Compile).value,
@@ -73,13 +73,17 @@ PB.protocOptions in Compile := Seq("-xyz")
 // Excluding some proto files:
 excludeFilter in PB.generate := "test-*.proto"
 
-// By default we generate into target/src_managed. To customize:
-PB.targets in Compile := Seq(
-  scalapb.gen() -> file("/some/other/dir")
-)
+// When compiling in Windows, Python is used to bridge protoc and this JVM.
+// To set the path for Python.exe:
+PB.pythonExe := "/path/to/python.exe"
 
 // Rarely needed: override where proto files from library dependencies are
 // extracted to:
 PB.externalIncludePaths := file("/tmp/foo")
+
+// By default we generate into target/src_managed. To customize:
+PB.targets in Compile := Seq(
+  scalapb.gen() -> file("/some/other/dir")
+)
 ```
 
