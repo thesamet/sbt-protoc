@@ -3,6 +3,7 @@ package sbtprotoc
 import sbt._
 import Keys._
 import java.io.File
+import java.nio.file.{Files, Path, Paths}
 
 import protocbridge.Target
 import sbt.plugins.JvmPlugin
@@ -93,36 +94,68 @@ object ProtocPlugin extends AutoPlugin {
     ModuleID(f.groupId, f.artifactId, f.version, crossVersion =
       if (f.crossVersion) CrossVersion.binary else CrossVersion.Disabled)
 
-  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, log: Logger) = {
-    val generatedTargetDirs = targets.map(_.outputPath)
-    generatedTargetDirs.foreach{ targetDir =>
-      IO.delete(targetDir)
-      targetDir.mkdirs()
+  private[this] def moveDirContents(srcDir: File, dstDir: File): Seq[File] = {
+    srcDir.listFiles().flatMap {
+      f =>
+        val dst = dstDir / f.name
+        if (f.isDirectory) moveDir(f, dst)
+        else {
+          IO.move(f, dst)
+          Seq(dst)
+        }
     }
+  }
 
-    if(!schemas.isEmpty){
-      log.info("Compiling %d protobuf files to %s".format(schemas.size, generatedTargetDirs.mkString(",")))
+  private[sbtprotoc] def moveDir(srcDir: File, dstDir: File): Seq[File] = {
+    if (dstDir.exists()) {
+      moveDirContents(srcDir, dstDir)
+    } else {
+      IO.move(srcDir, dstDir)
+      (dstDir ***).filter(_.isFile).get
+    }
+  }
+
+  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, log: Logger) = {
+    if (!schemas.isEmpty) {
+      log.info("Compiling %d protobuf files.".format(schemas.size))
       log.debug("protoc options:")
-      protocOptions.map("\t"+_).foreach(log.debug(_))
+      protocOptions.map("\t" + _).foreach(log.debug(_))
       schemas.foreach(schema => log.info("Compiling schema %s" format schema))
 
-      val exitCode = executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, pythonExe, log)
-      if (exitCode != 0)
-        sys.error("protoc returned exit code: %d" format exitCode)
+      IO.createDirectories(targets.map(_.outputPath))
 
-      log.info("Compiling protobuf")
-      generatedTargetDirs.foreach{ dir =>
-        log.info("Protoc target directory: %s".format(dir.absolutePath))
+      val tmpDirectoriesForTargets: Seq[(Target, Path)] = targets.map {
+        t => (t -> Files.createTempDirectory(t.outputPath.toPath, "sbt-protoc"))
       }
 
-      (targets.flatMap{ot => (ot.outputPath ** ("*.java" | "*.scala")).get}).toSet
+      val modifiedTargets: Seq[Target] = tmpDirectoriesForTargets.map {
+        case (t, newPath) => t.copy(outputPath = newPath.toFile)
+      }
+
+      val outputs = try {
+        log.info("Compiling protobuf")
+        val exitCode = executeProtoc(protocCommand, schemas, includePaths,
+            protocOptions, modifiedTargets, pythonExe, log)
+        if (exitCode != 0) {
+          sys.error("protoc returned exit code: %d" format exitCode)
+        }
+        tmpDirectoriesForTargets.flatMap {
+          case (target, tmpPath) =>
+            moveDir(tmpPath.toFile, target.outputPath)
+        }
+      } finally {
+        modifiedTargets.foreach(t => IO.delete(t.outputPath))
+      }
+
+      outputs.toSet
     } else {
       Set[File]()
     }
   }
 
   private[this] def unpack(deps: Seq[File], extractTarget: File, log: Logger): Seq[File] = {
-    IO.createDirectory(extractTarget)
+
+  IO.createDirectory(extractTarget)
     deps.flatMap { dep =>
       val seq = IO.unzip(dep, extractTarget, "*.proto").toSeq
       if (!seq.isEmpty) log.debug("Extracted " + seq.mkString("\n * ", "\n * ", ""))
