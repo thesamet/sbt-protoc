@@ -35,7 +35,7 @@ object MyCodeGenerator extends protocbridge.ProtocCodeGenerator with DescriptorP
       .add(s"package ${fileDesc.scalaPackageName}")
       .add("")
       .print(fileDesc.getMessageTypes.asScala) {
-        case (m, p) =>
+        case (p, m) =>
           p.add(s"object ${m.getName}Boo {")
             .indent
             .add(s"type T = ${m.scalaTypeName}")
