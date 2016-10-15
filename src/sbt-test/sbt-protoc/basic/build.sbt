@@ -2,7 +2,7 @@ libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.0.0" % "prot
 
 excludeFilter in PB.generate := "test1.proto"
 
-unmanagedResourceDirectories in Compile <++= PB.protoSources in Compile
+unmanagedResourceDirectories in Compile ++= (PB.protoSources in Compile).value
 
 TaskKey[Unit]("checkJar") := IO.withTemporaryDirectory{ dir =>
   val files = IO.unzip((packageBin in Compile).value, dir, "*.proto")
