@@ -48,7 +48,7 @@ object ProtocPlugin extends AutoPlugin {
       Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
     },
     ivyConfigurations += ProtobufConfig,
-    PB.protocVersion := "-v300",
+    PB.protocVersion := "-v310",
     PB.runProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
     },
