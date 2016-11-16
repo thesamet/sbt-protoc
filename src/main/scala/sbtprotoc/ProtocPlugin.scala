@@ -96,7 +96,8 @@ object ProtocPlugin extends AutoPlugin {
       if (f.crossVersion) CrossVersion.binary else CrossVersion.Disabled)
 
   private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, deleteTargetDirectory: Boolean, log: Logger) = {
-    val generatedTargetDirs = targets.map(_.outputPath)
+    // Sort by the length of path names to ensure that delete parent directories before deleting child directories.
+    val generatedTargetDirs = targets.map(_.outputPath).sortBy(_.getAbsolutePath.length)
     generatedTargetDirs.foreach{ targetDir =>
       if (deleteTargetDirectory) {
         IO.delete(targetDir)
