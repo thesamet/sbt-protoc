@@ -1,0 +1,10 @@
+> compile
+
+$ exists module_a/target/scala-2.10/src_managed/main/moduleA/a/AMessage.scala
+$ exists module_a/target/scala-2.10/classes/moduleA/a/AMessage.class
+
+$ exists module_b/target/scala-2.10/src_managed/main/moduleB/b/BMessage.scala
+$ exists module_b/target/scala-2.10/classes/moduleB/b/BMessage.class
+
+-$ exists module_b/target/scala-2.10/src_managed/main/moduleA/a/AMessage.scala
+-$ exists module_b/target/scala-2.10/classes/moduleB/b/AMessage.class

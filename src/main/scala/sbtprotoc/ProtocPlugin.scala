@@ -130,7 +130,12 @@ object ProtocPlugin extends AutoPlugin {
     }
   }
 
+  private[this] def findInternalIncludes(deps: Seq[File]): Seq[File] = {
+    deps.filter(dep => !(dep ** "*.proto").get.isEmpty)
+  }
+
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] = Def.task {
+    val internalIncludes = findInternalIncludes((internalDependencyClasspath in key).value.map(_.data))
     val schemas = (PB.protoSources in key).value.toSet[File].flatMap(srcDir => (srcDir ** ((includeFilter in key).value -- (excludeFilter in key).value)).get
       .map(_.getAbsoluteFile))
     val cachedCompile = FileFunction.cached(
@@ -138,7 +143,7 @@ object ProtocPlugin extends AutoPlugin {
       compile(
         (PB.runProtoc in key).value,
         schemas,
-        (PB.includePaths in key).value,
+        (PB.includePaths in key).value ++ internalIncludes,
         (PB.protocOptions in key).value,
         (PB.targets in key).value,
         (PB.pythonExe in key).value,

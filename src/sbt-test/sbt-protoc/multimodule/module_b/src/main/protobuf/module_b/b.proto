@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "module_a/a.proto";
+
+package moduleB;
+
+message BMessage {
+    moduleA.AMessage aMessage = 1;
+}
