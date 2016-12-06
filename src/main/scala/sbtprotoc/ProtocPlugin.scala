@@ -22,6 +22,7 @@ object ProtocPlugin extends AutoPlugin {
       val runProtoc = SettingKey[Seq[String] => Int]("protoc-run-protoc", "A function that executes the protobuf compiler with the given arguments, returning the exit code of the compilation run.")
       val protocVersion = SettingKey[String]("protoc-version", "Version flag to pass to protoc-jar")
       val pythonExe =  SettingKey[String]("python-executable", "Full path for a Python.exe (needed only on Windows)")
+      val deleteTargetDirectory =  SettingKey[Boolean]("delete-target-directory", "Delete target directory before regenerating sources.")
 
       val Target = protocbridge.Target
       val gens = protocbridge.gens
@@ -52,7 +53,8 @@ object ProtocPlugin extends AutoPlugin {
     PB.runProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
     },
-    PB.pythonExe := "python"
+    PB.pythonExe := "python",
+    PB.deleteTargetDirectory := true
   )
 
   // Settings that are applied at configuration (Compile, Test) scope.
@@ -93,10 +95,12 @@ object ProtocPlugin extends AutoPlugin {
     ModuleID(f.groupId, f.artifactId, f.version, crossVersion =
       if (f.crossVersion) CrossVersion.binary else CrossVersion.Disabled)
 
-  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, log: Logger) = {
+  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, deleteTargetDirectory: Boolean, log: Logger) = {
     val generatedTargetDirs = targets.map(_.outputPath)
     generatedTargetDirs.foreach{ targetDir =>
-      IO.delete(targetDir)
+      if (deleteTargetDirectory) {
+        IO.delete(targetDir)
+      }
       targetDir.mkdirs()
     }
 
@@ -142,6 +146,7 @@ object ProtocPlugin extends AutoPlugin {
         (PB.protocOptions in key).value,
         (PB.targets in key).value,
         (PB.pythonExe in key).value,
+        (PB.deleteTargetDirectory in key).value,
         (streams in key).value.log)
     }
     cachedCompile(schemas).toSeq
