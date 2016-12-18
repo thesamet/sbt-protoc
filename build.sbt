@@ -19,7 +19,7 @@ ScriptedPlugin.scriptedSettings
 
 scriptedBufferLog := false
 
-scriptedLaunchOpts <+= version( x => s"-Dplugin.version=${x}" )
+scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
 
 // Release
 releasePublishArtifactsAction := PgpKeys.publishSigned.value

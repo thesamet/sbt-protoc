@@ -41,9 +41,10 @@ object ProtocPlugin extends AutoPlugin {
 
   def protobufGlobalSettings: Seq[Def.Setting[_]] = Seq(
     includeFilter in PB.generate := "*.proto",
-    PB.externalIncludePath <<= target(_ / "protobuf_external"),
+    PB.externalIncludePath := target.value / "protobuf_external",
 
-    libraryDependencies <++= (PB.targets in Compile) (_.flatMap(_.generator.suggestedDependencies.map(makeArtifact))),
+    libraryDependencies ++= (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies.map(makeArtifact)),
+
     managedClasspath in ProtobufConfig := {
       val artifactTypes: Set[String] = (classpathTypes in ProtobufConfig).value
       Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
@@ -61,19 +62,19 @@ object ProtocPlugin extends AutoPlugin {
   def protobufConfigSettings: Seq[Setting[_]] = Seq(
     PB.protocOptions := Nil,
 
-    PB.unpackDependencies <<= unpackDependenciesTask(PB.unpackDependencies),
+    PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
 
     PB.protoSources := Nil,
-    PB.protoSources <+= sourceDirectory { _ / "protobuf" },
+    PB.protoSources += sourceDirectory.value / "protobuf",
 
-    PB.includePaths <<= PB.protoSources,
-    PB.includePaths <+= PB.externalIncludePath,
+    PB.includePaths := PB.protoSources.value,
+    PB.includePaths += PB.externalIncludePath.value,
 
     PB.targets := Nil,
     PB.targets += Target(PB.gens.java, sourceManaged.value),
 
-    PB.generate <<= sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies),
-    sourceGenerators <+= PB.generate
+    PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
+    sourceGenerators += PB.generate.taskValue
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
