@@ -85,5 +85,8 @@ PB.externalIncludePaths := file("/tmp/foo")
 PB.targets in Compile := Seq(
   scalapb.gen() -> file("/some/other/dir")
 )
+
+// Use a locally provided protoc:
+PB.runProtoc := (args => Process("/path/to/protoc", args)!)
 ```
 
