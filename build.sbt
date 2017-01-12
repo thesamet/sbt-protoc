@@ -9,8 +9,8 @@ scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args"
 scalacOptions += "-target:jvm-1.7"
 
 libraryDependencies ++= Seq(
-  "com.github.os72" % "protoc-jar" % "3.1.0.1",
-  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.2.4"
+  "com.github.os72" % "protoc-jar" % "3.1.0.2",
+  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.2.5"
 )
 
 sbtPlugin := true
