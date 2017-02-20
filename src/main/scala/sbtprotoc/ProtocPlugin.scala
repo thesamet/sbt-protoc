@@ -140,8 +140,10 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] = Def.task {
     val schemas = (PB.protoSources in key).value.toSet[File].flatMap(srcDir => (srcDir ** ((includeFilter in key).value -- (excludeFilter in key).value)).get
       .map(_.getAbsoluteFile))
+    // Include Scala binary version like "_2.11" for cross building.
+    val cacheFile = (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
     val cachedCompile = FileFunction.cached(
-      (streams in key).value.cacheDirectory / "protobuf", inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
+      cacheFile, inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
       compile(
         (PB.runProtoc in key).value,
         schemas,
