@@ -12,3 +12,5 @@ TaskKey[Unit]("checkJar") := IO.withTemporaryDirectory{ dir =>
 
 // https://github.com/sbt/sbt-protobuf/issues/37
 mainClass in compile := Some("whatever")
+
+PB.targets in Compile := Seq(PB.gens.java -> (sourceManaged in Compile).value)

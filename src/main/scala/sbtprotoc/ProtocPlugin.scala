@@ -71,7 +71,6 @@ object ProtocPlugin extends AutoPlugin {
     PB.includePaths += PB.externalIncludePath.value,
 
     PB.targets := Nil,
-    PB.targets += Target(PB.gens.java, sourceManaged.value),
 
     PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
     sourceGenerators += PB.generate.taskValue
@@ -105,7 +104,7 @@ object ProtocPlugin extends AutoPlugin {
       targetDir.mkdirs()
     }
 
-    if(!schemas.isEmpty){
+    if (schemas.nonEmpty && targets.nonEmpty) {
       log.info("Compiling %d protobuf files to %s".format(schemas.size, generatedTargetDirs.mkString(",")))
       log.debug("protoc options:")
       protocOptions.map("\t"+_).foreach(log.debug(_))
@@ -121,6 +120,9 @@ object ProtocPlugin extends AutoPlugin {
       }
 
       (targets.flatMap{ot => (ot.outputPath ** ("*.java" | "*.scala")).get}).toSet
+    } else if (schemas.nonEmpty && targets.isEmpty) {
+      log.info("Protobufs files found, but PB.targets is empty.")
+      Set[File]()
     } else {
       Set[File]()
     }

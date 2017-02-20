@@ -29,7 +29,13 @@ libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.5.41"
 
 **Step 2: add to `build.sbt`:**
 
-Nothing to do, if you only want to generate Java.
+If you only want to generate Java:
+
+```
+PB.targets in Compile := Seq(
+  PB.gens.java -> (sourceManaged in Compile).value
+)
+```
 
 For ScalaPB:
 ```
