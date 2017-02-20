@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package sub1;
+
+import "com/thesamet/protos/defs.proto";
+
+message Sub1Msg {
+  optional com.thesamet.protos.PersonName person_name = 1;
+}
