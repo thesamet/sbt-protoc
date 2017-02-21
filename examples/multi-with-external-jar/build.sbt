@@ -7,14 +7,11 @@ lazy val protos = (project in file("protos"))
     ),
 
     // Dependencies marked with "protobuf" get extracted to target / protobuf_external
-    PB.protoSources in Compile += target.value / "protobuf_external",
-
     // In addition to the JAR we care about, the protobuf_external directory
     // is going to contain protos from ScalaPB runtime and Google's standard
     // protos.  In order to avoid compiling them, we restrict what's compiled
-    // by using this includeFilter:
-    includeFilter in PB.generate := new SimpleFileFilter(
-      (f: File) => f.getParent.endsWith("com/thesamet/protos")),
+    // to a subdirectory of protobuf_external
+    PB.protoSources in Compile += target.value / "protobuf_external" / "com" / "thesamet",
 
     PB.targets in Compile := Seq(
       scalapb.gen() -> (sourceManaged in Compile).value
