@@ -16,7 +16,7 @@ object ProtocPlugin extends AutoPlugin {
       val generate = TaskKey[Seq[File]]("protoc-generate", "Compile the protobuf sources.")
       val unpackDependencies = TaskKey[UnpackedDependencies]("protoc-unpack-dependencies", "Unpack dependencies.")
       val protocOptions = SettingKey[Seq[String]]("protoc-options", "Additional options to be passed to protoc")
-      val protoSources = SettingKey[Seq[File]]("protoc-sources", "Directory to look for source files")
+      val protoSources = SettingKey[Seq[File]]("protoc-sources", "Directories to look for source files")
       val targets = SettingKey[Seq[Target]]("protoc-targets", "List of targets to generate")
 
       val runProtoc = SettingKey[Seq[String] => Int]("protoc-run-protoc", "A function that executes the protobuf compiler with the given arguments, returning the exit code of the compilation run.")
