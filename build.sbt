@@ -4,6 +4,8 @@ organization := "com.thesamet"
 
 name := "sbt-protoc"
 
+description := "SBT plugin for generating code from Protocol Buffer using protoc"
+
 scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args")
 
 scalacOptions += "-target:jvm-1.7"
@@ -21,8 +23,13 @@ scriptedBufferLog := false
 
 scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
 
-// Release
-releasePublishArtifactsAction := PgpKeys.publishSigned.value
+licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
+
+publishMavenStyle := false
+
+bintrayRepository := "sbt-plugins"
+
+bintrayOrganization in bintray := None
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
@@ -32,10 +39,9 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  ReleaseStep(action = Command.process("publishSigned", _), enableCrossBuild = true),
+  publishArtifacts,
+  releaseStepTask(bintrayRelease),
   setNextVersion,
   commitNextVersion,
-  ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
   pushChanges
 )
-
