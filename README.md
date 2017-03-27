@@ -71,7 +71,7 @@ libraryDependencies ++= Seq(
 )
 
 // Changing where to look for protos to compile (default src/main/protobuf):
-PB.protoSources in Compile := Seq(file(sourceDirectory.value / "somewhere"))
+PB.protoSources in Compile := Seq(sourceDirectory.value / "somewhere")
 
 // Additional options to pass to protoc:
 PB.protocOptions in Compile := Seq("-xyz")
