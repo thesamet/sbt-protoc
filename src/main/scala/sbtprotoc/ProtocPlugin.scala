@@ -23,10 +23,28 @@ object ProtocPlugin extends AutoPlugin {
       val protocVersion = SettingKey[String]("protoc-version", "Version flag to pass to protoc-jar")
       val pythonExe =  SettingKey[String]("python-executable", "Full path for a Python.exe (needed only on Windows)")
       val deleteTargetDirectory =  SettingKey[Boolean]("delete-target-directory", "Delete target directory before regenerating sources.")
+      val recompile = TaskKey[Boolean]("protoc-recompile")
 
       val Target = protocbridge.Target
       val gens = protocbridge.gens
     }
+  }
+
+  // internal key for detect change options
+  private[this] val arguments = TaskKey[Arguments]("protoc-arguments")
+
+  private[this] final case class Arguments(
+    includePaths: Seq[File],
+    protocOptions: Seq[String],
+    pythonExe: String,
+    deleteTargetDirectory: Boolean,
+    targets: Seq[(File, Seq[String])]
+  )
+  private[this] object Arguments {
+    import sbt.Cache.seqFormat
+    import sbinary.DefaultProtocol._
+    implicit val instance: sbinary.Format[Arguments] =
+      asProduct5(apply)(Function.unlift(unapply))
   }
 
   import autoImport.PB
@@ -60,6 +78,14 @@ object ProtocPlugin extends AutoPlugin {
 
   // Settings that are applied at configuration (Compile, Test) scope.
   def protobufConfigSettings: Seq[Setting[_]] = Seq(
+    arguments := Arguments(
+      includePaths = PB.includePaths.value,
+      protocOptions = PB.protocOptions.value,
+      pythonExe = PB.pythonExe.value,
+      deleteTargetDirectory = PB.deleteTargetDirectory.value,
+      targets = PB.targets.value.map(target => (target.outputPath, target.options))
+    ),
+    PB.recompile := arguments.previous.exists(_ != arguments.value),
     PB.protocOptions := Nil,
 
     PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
@@ -143,8 +169,7 @@ object ProtocPlugin extends AutoPlugin {
       .map(_.getAbsoluteFile))
     // Include Scala binary version like "_2.11" for cross building.
     val cacheFile = (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
-    val cachedCompile = FileFunction.cached(
-      cacheFile, inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
+    def compileProto(): Set[File] =
       compile(
         (PB.runProtoc in key).value,
         schemas,
@@ -154,8 +179,17 @@ object ProtocPlugin extends AutoPlugin {
         (PB.pythonExe in key).value,
         (PB.deleteTargetDirectory in key).value,
         (streams in key).value.log)
+
+    val cachedCompile = FileFunction.cached(
+      cacheFile, inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
+        compileProto()
     }
-    cachedCompile(schemas).toSeq
+
+    if(PB.recompile.value) {
+      compileProto().toSeq
+    } else {
+      cachedCompile(schemas).toSeq
+    }
   }
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) = Def.task {
