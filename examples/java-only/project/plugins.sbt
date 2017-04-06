@@ -1,1 +1,1 @@
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.5")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.7")

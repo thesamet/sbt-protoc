@@ -22,9 +22,9 @@ Installation
 **Step 1: create `project/protoc.sbt` with:**
 
 ```
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.0")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.7")
 
-libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.5.41"
+libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.0-pre3"
 ```
 
 **Step 2: add to `build.sbt`:**
@@ -67,7 +67,7 @@ PB.includePaths in Compile ++= Seq(file("/some/other/path"))
 
 // Make protos from some Jar available to import.
 libraryDependencies ++= Seq(
-  "com.google.protobuf" % "protobuf-java" % "3.1.0" % "protobuf"
+  "com.google.protobuf" % "protobuf-java" % "3.2.0" % "protobuf"
 )
 
 // Changing where to look for protos to compile (default src/main/protobuf):
