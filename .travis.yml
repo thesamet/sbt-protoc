@@ -4,4 +4,6 @@ scala:
    - 2.10.6
 script:
    - sbt ++$TRAVIS_SCALA_VERSION test scripted
+   - cd examples
+   - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
 
