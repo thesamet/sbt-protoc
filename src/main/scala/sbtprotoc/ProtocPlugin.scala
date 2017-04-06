@@ -87,16 +87,18 @@ object ProtocPlugin extends AutoPlugin {
     ),
     PB.recompile := arguments.previous.exists(_ != arguments.value),
     PB.protocOptions := Nil,
+    PB.protocOptions := PB.protocOptions.?.value.getOrElse(Nil),
 
     PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
 
-    PB.protoSources := Nil,
+    PB.protoSources := PB.protoSources.?.value.getOrElse(Nil),
     PB.protoSources += sourceDirectory.value / "protobuf",
 
-    PB.includePaths := PB.protoSources.value,
+    PB.includePaths := PB.includePaths.?.value.getOrElse(Nil),
+    PB.includePaths ++= PB.protoSources.value,
     PB.includePaths += PB.externalIncludePath.value,
 
-    PB.targets := Nil,
+    PB.targets := PB.targets.?.value.getOrElse(Nil),
 
     PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
     sourceGenerators += PB.generate.taskValue
