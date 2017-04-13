@@ -1,4 +1,4 @@
-libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.1.0" % "protobuf"
+libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.2.0" % "protobuf"
 
 excludeFilter in PB.generate := "test1.proto"
 
