@@ -1,4 +1,6 @@
-libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.2.0" % "protobuf"
+val protobufVersion = "3.3.1"
+
+libraryDependencies += "com.google.protobuf" % "protobuf-java" % protobufVersion % "protobuf"
 
 excludeFilter in PB.generate := "test1.proto"
 
@@ -13,4 +15,4 @@ TaskKey[Unit]("checkJar") := IO.withTemporaryDirectory{ dir =>
 // https://github.com/sbt/sbt-protobuf/issues/37
 mainClass in compile := Some("whatever")
 
-PB.targets in Compile := Seq(PB.gens.java -> (sourceManaged in Compile).value)
+PB.targets in Compile := Seq(PB.gens.java(protobufVersion) -> (sourceManaged in Compile).value)
