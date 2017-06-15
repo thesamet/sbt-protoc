@@ -69,9 +69,6 @@ object ProtocPlugin extends AutoPlugin {
     },
     ivyConfigurations += ProtobufConfig,
     PB.protocVersion := "-v320",
-    PB.runProtoc := { args =>
-      com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
-    },
     PB.pythonExe := "python",
     PB.deleteTargetDirectory := true
   )
@@ -101,6 +98,11 @@ object ProtocPlugin extends AutoPlugin {
     PB.targets := PB.targets.?.value.getOrElse(Nil),
 
     PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
+
+    PB.runProtoc := { args =>
+      com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
+    },
+
     sourceGenerators += PB.generate.taskValue
   )
 
