@@ -9,7 +9,6 @@ def grpcExeFileName = {
   s"${grpcArtifactId}-${grpcJavaVersion}-${os}.exe"
 }
 
-
 val grpcArtifactId = "protoc-gen-grpc-java"
 
 val grpcJavaVersion = "1.4.0"
