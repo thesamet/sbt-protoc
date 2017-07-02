@@ -68,7 +68,7 @@ object ProtocPlugin extends AutoPlugin {
       Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
     },
     ivyConfigurations += ProtobufConfig,
-    PB.protocVersion := "-v320",
+    PB.protocVersion := "-v330",
     PB.pythonExe := "python",
     PB.deleteTargetDirectory := true
   )
