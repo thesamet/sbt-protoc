@@ -93,6 +93,7 @@ object ProtocPlugin extends AutoPlugin {
 
     PB.includePaths := PB.includePaths.?.value.getOrElse(Nil),
     PB.includePaths ++= PB.protoSources.value,
+    PB.includePaths ++= protocIncludeDependencies.value,
     PB.includePaths += PB.externalIncludePath.value,
 
     PB.targets := PB.targets.?.value.getOrElse(Nil),
@@ -200,4 +201,26 @@ object ProtocPlugin extends AutoPlugin {
     val extractedFiles = unpack((managedClasspath in (ProtobufConfig, key)).value.map(_.data), (PB.externalIncludePath in key).value, (streams in key).value.log)
     UnpackedDependencies((PB.externalIncludePath in key).value, extractedFiles)
   }
+
+    /**
+    * Gets a Seq[File] representing the proto sources of all the projects that the current project depends on.
+    */
+  def protocIncludeDependencies: Def.Initialize[Seq[File]] = Def.settingDyn {
+    val deps = buildDependencies.value.classpath
+
+    def getAllProjectDeps(ref: ProjectRef)(visited: Set[ProjectRef] = Set(ref)): Seq[ProjectRef] =
+      deps.getOrElse(ref, Seq.empty).map(_.project).filterNot(visited).flatMap(getAllProjectDeps(_)(visited + ref)) :+ ref
+
+    val thisProjectDeps = getAllProjectDeps(thisProjectRef.value)()
+
+    println(thisProjectDeps)
+
+    thisProjectDeps.map(ref => PB.protoSources in (ref, Compile)).foldLeft(Def.setting(Seq.empty[File])) {
+      case (acc, seq) => Def.settingDyn {
+        val values = acc.value ++ seq.value
+        Def.setting(values)
+      }
+    }
+  }
+
 }

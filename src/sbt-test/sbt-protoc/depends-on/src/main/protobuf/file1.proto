@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package multi;
+
+import "a.proto";
+import "b.proto";
+
+message msg1 {
+  int32 thing = 1;
+  sub.a.msg1 sub_a = 2;
+  sub.b.msg1 sub_b = 3;
+}
