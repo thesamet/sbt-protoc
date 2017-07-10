@@ -1,26 +1,26 @@
 > compile
 
-$ exists target/scala-2.10/src_managed/main/multi/File1.java
-$ exists target/scala-2.10/classes/multi/File1.class
+> existsSource multi/File1.java
+> existsClass multi/File1.class
 
-$ exists target/scala-2.10/src_managed/main/multi/File2.java
-$ exists target/scala-2.10/classes/multi/File2.class
+> existsSource multi/File2.java
+> existsClass multi/File2.class
 
--$ exists target/scala-2.10/src_managed/main/multi/File3.java
--$ exists target/scala-2.10/classes/multi/File3.class
+-> existsSource multi/File3.java
+-> existsClass multi/File3.class
 
--$ exists target/scala-2.10/src_managed/test/multi/File3.java
--$ exists target/scala-2.10/classes/multi/File3.class
+-> existsTestSource multi/File3.java
+-> existsClass multi/File3.class
 
 > test:compile
-$ exists target/scala-2.10/src_managed/test/multi/File3.java
-$ exists target/scala-2.10/test-classes/multi/File3.class
+> existsTestSource multi/File3.java
+> existsTestClass multi/File3.class
 
--$ exists target/scala-2.10/src_managed/main/multi/File3.java
--$ exists target/scala-2.10/classes/multi/File3.class
+-> existsSource multi/File3.java
+-> existsClass multi/File3.class
 
 > clean
 
--$ exists target/scala-2.10/src_managed/main/multi/File1.java
--$ exists target/scala-2.10/src_managed/main/multi/File2.java
--$ exists target/scala-2.10/src_managed/test/multi/File3.java
+-> existsSource multi/File1.java
+-> existsSource multi/File2.java
+-> existsTestSource multi/File3.java
