@@ -213,8 +213,6 @@ object ProtocPlugin extends AutoPlugin {
 
     val thisProjectDeps = getAllProjectDeps(thisProjectRef.value)()
 
-    println(thisProjectDeps)
-
     thisProjectDeps.map(ref => PB.protoSources in (ref, Compile)).foldLeft(Def.setting(Seq.empty[File])) {
       case (acc, seq) => Def.settingDyn {
         val values = acc.value ++ seq.value
