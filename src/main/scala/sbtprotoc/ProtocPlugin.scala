@@ -13,6 +13,7 @@ object ProtocPlugin extends AutoPlugin {
     object PB {
       val includePaths = SettingKey[Seq[File]]("protoc-include-paths", "The paths that contain *.proto dependencies.")
       val externalIncludePath = SettingKey[File]("protoc-external-include-path", "The path to which protobuf:libraryDependencies are extracted and which is used as protobuf:includePath for protoc")
+      val dependentProjectsIncludePaths = SettingKey[Seq[File]]("protoc-dependent-projects-include-paths", "The paths to the protoc files of projects being depended on.")
       val generate = TaskKey[Seq[File]]("protoc-generate", "Compile the protobuf sources.")
       val unpackDependencies = TaskKey[UnpackedDependencies]("protoc-unpack-dependencies", "Unpack dependencies.")
       val protocOptions = SettingKey[Seq[String]]("protoc-options", "Additional options to be passed to protoc")
@@ -93,8 +94,9 @@ object ProtocPlugin extends AutoPlugin {
 
     PB.includePaths := PB.includePaths.?.value.getOrElse(Nil),
     PB.includePaths ++= PB.protoSources.value,
-    PB.includePaths ++= protocIncludeDependencies.value,
     PB.includePaths += PB.externalIncludePath.value,
+
+    PB.dependentProjectsIncludePaths := protocIncludeDependencies.value,
 
     PB.targets := PB.targets.?.value.getOrElse(Nil),
 
@@ -151,7 +153,7 @@ object ProtocPlugin extends AutoPlugin {
         log.info("Protoc target directory: %s".format(dir.absolutePath))
       }
 
-      (targets.flatMap{ot => (ot.outputPath ** ("*.java" | "*.scala")).get}).toSet
+      targets.flatMap { ot => (ot.outputPath ** ("*.java" | "*.scala")).get }.toSet
     } else if (schemas.nonEmpty && targets.isEmpty) {
       log.info("Protobufs files found, but PB.targets is empty.")
       Set[File]()
@@ -164,7 +166,7 @@ object ProtocPlugin extends AutoPlugin {
     IO.createDirectory(extractTarget)
     deps.flatMap { dep =>
       val seq = IO.unzip(dep, extractTarget, "*.proto").toSeq
-      if (!seq.isEmpty) log.debug("Extracted " + seq.mkString("\n * ", "\n * ", ""))
+      if (seq.nonEmpty) log.debug("Extracted " + seq.mkString("\n * ", "\n * ", ""))
       seq
     }
   }
@@ -178,7 +180,7 @@ object ProtocPlugin extends AutoPlugin {
       compile(
         (PB.runProtoc in key).value,
         schemas,
-        (PB.includePaths in key).value,
+        (PB.includePaths in key).value ++ PB.dependentProjectsIncludePaths.value,
         (PB.protocOptions in key).value,
         (PB.targets in key).value,
         (PB.pythonExe in key).value,
