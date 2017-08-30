@@ -14,7 +14,7 @@ scalacOptions += {
 }
 
 libraryDependencies ++= Seq(
-  "com.github.os72" % "protoc-jar" % "3.3.0",
+  "com.github.os72" % "protoc-jar" % "3.4.0",
   "com.trueaccord.scalapb" %% "protoc-bridge" % "0.2.7"
 )
 
