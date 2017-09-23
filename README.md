@@ -85,7 +85,7 @@ PB.pythonExe := "/path/to/python.exe"
 
 // Rarely needed: override where proto files from library dependencies are
 // extracted to:
-PB.externalIncludePaths := file("/tmp/foo")
+PB.externalIncludePath := file("/tmp/foo")
 
 // By default we generate into target/src_managed. To customize:
 PB.targets in Compile := Seq(
