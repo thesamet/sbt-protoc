@@ -9,7 +9,8 @@ import com.trueaccord.scalapb.compiler.{DescriptorPimps, FunctionalPrinter}
 object MyCodeGenerator extends protocbridge.ProtocCodeGenerator with DescriptorPimps {
   val params = com.trueaccord.scalapb.compiler.GeneratorParams()
 
-  def run(request: CodeGeneratorRequest): CodeGeneratorResponse = {
+  def run(input: Array[Byte]): Array[Byte] = {
+    val request = CodeGeneratorRequest.parseFrom(input)
     val b = CodeGeneratorResponse.newBuilder
 
     val fileDescByName: Map[String, FileDescriptor] =
@@ -25,7 +26,7 @@ object MyCodeGenerator extends protocbridge.ProtocCodeGenerator with DescriptorP
         val responseFile = generateFile(fileDesc)
         b.addFile(responseFile)
     }
-    b.build
+    b.build.toByteArray
   }
 
   def generateFile(fileDesc: FileDescriptor): CodeGeneratorResponse.File = {
