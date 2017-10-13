@@ -22,9 +22,9 @@ Installation
 **Step 1: create `project/protoc.sbt` with:**
 
 ```
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.11")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.12")
 
-libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.2"
+libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.6"
 ```
 
 **Step 2: add to `build.sbt`:**
