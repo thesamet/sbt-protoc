@@ -8,11 +8,14 @@ description := "SBT plugin for generating code from Protocol Buffer using protoc
 
 scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args")
 
-scalacOptions += "-target:jvm-1.7"
+scalacOptions += {
+  if (sbtVersion.value.startsWith("0.13")) "-target:jvm-1.7"
+  else "-target:jvm-1.8"
+}
 
 libraryDependencies ++= Seq(
-  "com.github.os72" % "protoc-jar" % "3.3.0",
-  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.2.7"
+  "com.github.os72" % "protoc-jar" % "3.4.0",
+  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.3.0-M1"
 )
 
 sbtPlugin := true
@@ -35,13 +38,15 @@ releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   inquireVersions,
   runClean,
-  runTest,
+  releaseStepCommandAndRemaining("^ test"),
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  publishArtifacts,
+  releaseStepCommandAndRemaining("^ publish"),
   releaseStepTask(bintrayRelease),
   setNextVersion,
   commitNextVersion,
   pushChanges
 )
+
+crossSbtVersions := Seq("0.13.16", "1.0.2")

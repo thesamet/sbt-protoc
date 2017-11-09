@@ -22,9 +22,9 @@ Installation
 **Step 1: create `project/protoc.sbt` with:**
 
 ```
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.11")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.12")
 
-libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.0"
+libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.6"
 ```
 
 **Step 2: add to `build.sbt`:**
@@ -67,7 +67,7 @@ PB.includePaths in Compile ++= Seq(file("/some/other/path"))
 
 // Make protos from some Jar available to import.
 libraryDependencies ++= Seq(
-  "com.google.protobuf" % "protobuf-java" % "3.3.1" % "protobuf"
+  "com.google.protobuf" % "protobuf-java" % "3.4.0" % "protobuf"
 )
 
 // Changing where to look for protos to compile (default src/main/protobuf):
@@ -85,7 +85,7 @@ PB.pythonExe := "/path/to/python.exe"
 
 // Rarely needed: override where proto files from library dependencies are
 // extracted to:
-PB.externalIncludePaths := file("/tmp/foo")
+PB.externalIncludePath := file("/tmp/foo")
 
 // By default we generate into target/src_managed. To customize:
 PB.targets in Compile := Seq(

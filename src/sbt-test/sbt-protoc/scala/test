@@ -1,13 +1,13 @@
 > compile
 
-$ exists target/scala-2.10/src_managed/main/test/test1/test1.scala
-$ exists target/scala-2.10/classes/test/test1/test1.class
+> existsSource test/test1/test1.scala
+> existsClass test/test1/test1.class
 
-$ exists target/scala-2.10/src_managed/main/test/test2/test2.scala
-$ exists target/scala-2.10/classes/test/test2/test2.class
+> existsSource test/test2/test2.scala
+> existsClass test/test2/test2.class
 
--$ exists target/scala-2.10/src_managed/main/test/Test2.java
--$ exists target/scala-2.10/src_managed/main/test/Test1.java
+-> existsSource test/Test2.java
+-> existsSource test/Test1.java
 
 > set PB.protocOptions in Compile += "invalid argument"
 -> compile
@@ -15,5 +15,5 @@ $ exists target/scala-2.10/classes/test/test2/test2.class
 > compile
 > set PB.targets in Compile := Seq(scalapb.gen(flatPackage=true) -> (sourceManaged in Compile).value)
 > compile
-$ exists target/scala-2.10/src_managed/main/test/test1.scala
--$ exists target/scala-2.10/src_managed/main/test/test1/test1.scala
+> existsSource test/test1.scala
+-> existsSource test/test1/test1.scala

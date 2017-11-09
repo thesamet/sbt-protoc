@@ -1,20 +1,20 @@
 > compile
 
 # test for https://github.com/sbt/sbt-protobuf/pull/29
--$ exists target/scala-2.10/src_managed/main/test/Test1.java
--$ exists target/scala-2.10/classes/test/Test1.class
+-> existsSource test/Test1.java
+-> existsClass test/Test1.class
 
 # https://github.com/sbt/sbt-protobuf/tree/v0.5.0#declaring-dependencies
-$ exists target/scala-2.10/src_managed/main/test/Test2.java
-$ exists target/scala-2.10/classes/test/Test2.class
+> existsSource test/Test2.java
+> existsClass test/Test2.class
 
 > clean
 
--$ exists target/scala-2.10/src_managed/main/test/Test2.java
+-> existsSource test/Test2.java
 
 > compile
 > ++ 2.11.8
 > compile
-$ exists target/scala-2.11/src_managed/main/test/Test2.java
+> existsSource test/Test2.java
 
 > checkJar

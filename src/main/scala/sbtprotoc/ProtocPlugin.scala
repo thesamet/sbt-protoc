@@ -8,7 +8,7 @@ import protocbridge.Target
 import sbt.plugins.JvmPlugin
 
 
-object ProtocPlugin extends AutoPlugin {
+object ProtocPlugin extends AutoPlugin with Compat {
   object autoImport {
     object PB {
       val includePaths = SettingKey[Seq[File]]("protoc-include-paths", "The paths that contain *.proto dependencies.")
@@ -34,19 +34,13 @@ object ProtocPlugin extends AutoPlugin {
   // internal key for detect change options
   private[this] val arguments = TaskKey[Arguments]("protoc-arguments")
 
-  private[this] final case class Arguments(
+  private[sbtprotoc] final case class Arguments(
     includePaths: Seq[File],
     protocOptions: Seq[String],
     pythonExe: String,
     deleteTargetDirectory: Boolean,
     targets: Seq[(File, Seq[String])]
   )
-  private[this] object Arguments {
-    import sbt.Cache.seqFormat
-    import sbinary.DefaultProtocol._
-    implicit val instance: sbinary.Format[Arguments] =
-      asProduct5(apply)(Function.unlift(unapply))
-  }
 
   import autoImport.PB
 
@@ -83,7 +77,10 @@ object ProtocPlugin extends AutoPlugin {
       deleteTargetDirectory = PB.deleteTargetDirectory.value,
       targets = PB.targets.value.map(target => (target.outputPath, target.options))
     ),
-    PB.recompile := arguments.previous.exists(_ != arguments.value),
+    PB.recompile := {
+      import CacheArguments.instance
+      arguments.previous.exists(_ != arguments.value)
+    },
     PB.protocOptions := Nil,
     PB.protocOptions := PB.protocOptions.?.value.getOrElse(Nil),
 
@@ -123,10 +120,6 @@ object ProtocPlugin extends AutoPlugin {
     } catch { case e: Exception =>
       throw new RuntimeException("error occurred while compiling protobuf files: %s" format(e.getMessage), e)
     }
-
-  private def makeArtifact(f: protocbridge.Artifact): ModuleID =
-    ModuleID(f.groupId, f.artifactId, f.version, crossVersion =
-      if (f.crossVersion) CrossVersion.binary else CrossVersion.Disabled)
 
   private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, deleteTargetDirectory: Boolean, log: Logger) = {
     // Sort by the length of path names to ensure that delete parent directories before deleting child directories.
@@ -172,7 +165,9 @@ object ProtocPlugin extends AutoPlugin {
   }
 
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] = Def.task {
-    val schemas = (PB.protoSources in key).value.toSet[File].flatMap(srcDir => (srcDir ** ((includeFilter in key).value -- (excludeFilter in key).value)).get
+    val toInclude = (includeFilter in key).value
+    val toExclude = (excludeFilter in key).value
+    val schemas = (PB.protoSources in key).value.toSet[File].flatMap(srcDir => (srcDir ** (toInclude -- toExclude)).get
       .map(_.getAbsoluteFile))
     // Include Scala binary version like "_2.11" for cross building.
     val cacheFile = (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
