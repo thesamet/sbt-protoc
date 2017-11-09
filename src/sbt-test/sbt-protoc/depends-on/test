@@ -1,14 +1,14 @@
 > compile
 
-$ exists target/scala-2.10/src_managed/main/multi/File1.java
-$ exists target/scala-2.10/classes/multi/File1.class
+> existsSource multi/File1.java
+> existsClass multi/File1.class
 
-$ exists sub-a/target/scala-2.10/src_managed/main/sub/a/A.java
-$ exists sub-a/target/scala-2.10/classes/sub/a/A.class
+> existsASource sub/a/A.java
+> existsAClass sub/a/A.class
 
-$ exists sub-b/target/scala-2.10/src_managed/main/sub/b/B.java
-$ exists sub-b/target/scala-2.10/classes/sub/b/B.class
+> existsBSource sub/b/B.java
+> existsBClass sub/b/B.class
 
 > clean
 
--$ exists target/scala-2.10/src_managed/main/multi/File1.java
+-> existsSource multi/File1.java
