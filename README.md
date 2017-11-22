@@ -96,3 +96,9 @@ PB.targets in Compile := Seq(
 PB.runProtoc := (args => Process("/path/to/protoc", args)!)
 ```
 
+The following setting is needed, if you want to generate .proto definitions
+in the `Test` scope.
+
+```
+inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
+```
