@@ -14,8 +14,8 @@ scalacOptions += {
 }
 
 libraryDependencies ++= Seq(
-  "com.github.os72" % "protoc-jar" % "3.4.0",
-  "com.trueaccord.scalapb" %% "protoc-bridge" % "0.3.0-M1"
+  "com.github.os72" % "protoc-jar" % "3.5.0",
+  "com.thesamet.scalapb" %% "protoc-bridge" % "0.7.0"
 )
 
 sbtPlugin := true
