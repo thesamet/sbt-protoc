@@ -9,7 +9,7 @@ description := "SBT plugin for generating code from Protocol Buffer using protoc
 scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args")
 
 scalacOptions += {
-  if (sbtVersion.value.startsWith("0.13")) "-target:jvm-1.7"
+  if ((sbtVersion in pluginCrossBuild).value.startsWith("0.13")) "-target:jvm-1.7"
   else "-target:jvm-1.8"
 }
 
