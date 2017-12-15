@@ -21,6 +21,7 @@ lazy val protos = (project in file("protos"))
   )
 
 // Sub1 contains a proto file that imports a proto from test-protos.
+// And another proto file from the protos project.
 lazy val sub1 = (project in file("sub1"))
   .settings(
     name := "sub1",
@@ -38,6 +39,7 @@ lazy val sub1 = (project in file("sub1"))
       scalapb.gen() -> (sourceManaged in Compile).value
     ),
 
+    // This makes protoc find "common.proto"
     PB.includePaths in Compile += file("protos/src/main/protobuf")
   )
   .dependsOn(protos)
