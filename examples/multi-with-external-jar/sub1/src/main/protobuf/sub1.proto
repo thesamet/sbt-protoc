@@ -4,6 +4,9 @@ package sub1;
 
 import "com/thesamet/protos/defs.proto";
 
+import "common/common.proto";
+
 message Sub1Msg {
   optional com.thesamet.protos.PersonName person_name = 1;
+  optional com.thesamet.protos.common.CommonProto common = 2;
 }
