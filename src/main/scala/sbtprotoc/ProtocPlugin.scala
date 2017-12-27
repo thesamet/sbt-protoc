@@ -13,6 +13,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     object PB {
       val includePaths = SettingKey[Seq[File]]("protoc-include-paths", "The paths that contain *.proto dependencies.")
       val externalIncludePath = SettingKey[File]("protoc-external-include-path", "The path to which protobuf:libraryDependencies are extracted and which is used as protobuf:includePath for protoc")
+      val dependentProjectsIncludePaths = SettingKey[Seq[File]]("protoc-dependent-projects-include-paths", "The paths to the protoc files of projects being depended on.")
       val generate = TaskKey[Seq[File]]("protoc-generate", "Compile the protobuf sources.")
       val unpackDependencies = TaskKey[UnpackedDependencies]("protoc-unpack-dependencies", "Unpack dependencies.")
       val protocOptions = SettingKey[Seq[String]]("protoc-options", "Additional options to be passed to protoc")
@@ -92,6 +93,8 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.includePaths ++= PB.protoSources.value,
     PB.includePaths += PB.externalIncludePath.value,
 
+    PB.dependentProjectsIncludePaths := protocIncludeDependencies.value,
+
     PB.targets := PB.targets.?.value.getOrElse(Nil),
 
     PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
@@ -143,7 +146,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         log.info("Protoc target directory: %s".format(dir.absolutePath))
       }
 
-      (targets.flatMap{ot => (ot.outputPath ** ("*.java" | "*.scala")).get}).toSet
+      targets.flatMap { ot => (ot.outputPath ** ("*.java" | "*.scala")).get }.toSet
     } else if (schemas.nonEmpty && targets.isEmpty) {
       log.info("Protobufs files found, but PB.targets is empty.")
       Set[File]()
@@ -156,7 +159,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     IO.createDirectory(extractTarget)
     deps.flatMap { dep =>
       val seq = IO.unzip(dep, extractTarget, "*.proto").toSeq
-      if (!seq.isEmpty) log.debug("Extracted " + seq.mkString("\n * ", "\n * ", ""))
+      if (seq.nonEmpty) log.debug("Extracted " + seq.mkString("\n * ", "\n * ", ""))
       seq
     }
   }
@@ -172,7 +175,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       compile(
         (PB.runProtoc in key).value,
         schemas,
-        (PB.includePaths in key).value,
+        (PB.includePaths in key).value ++ PB.dependentProjectsIncludePaths.value,
         (PB.protocOptions in key).value,
         (PB.targets in key).value,
         (PB.pythonExe in key).value,
@@ -195,4 +198,26 @@ object ProtocPlugin extends AutoPlugin with Compat {
     val extractedFiles = unpack((managedClasspath in (ProtobufConfig, key)).value.map(_.data), (PB.externalIncludePath in key).value, (streams in key).value.log)
     UnpackedDependencies((PB.externalIncludePath in key).value, extractedFiles)
   }
+
+    /**
+    * Gets a Seq[File] representing the proto sources of all the projects that the current project depends on.
+    */
+  def protocIncludeDependencies: Def.Initialize[Seq[File]] = Def.settingDyn {
+    val deps = buildDependencies.value.classpath
+
+    def getAllProjectDeps(ref: ProjectRef)(visited: Set[ProjectRef] = Set(ref)): Seq[ProjectRef] =
+      deps.getOrElse(ref, Seq.empty).map(_.project).filterNot(visited).flatMap(getAllProjectDeps(_)(visited + ref)) :+ ref
+
+    val thisProjectDeps = getAllProjectDeps(thisProjectRef.value)()
+
+    thisProjectDeps
+      .map(ref => (PB.protoSources in (ref, Compile), PB.includePaths in (ref, Compile)))
+      .foldLeft(Def.setting(Seq.empty[File])) {
+        case (acc, (srcs, includes)) => Def.settingDyn {
+          val values = acc.value ++ srcs.value ++ includes.value
+          Def.setting(values.distinct)
+        }
+      }
+  }
+
 }
