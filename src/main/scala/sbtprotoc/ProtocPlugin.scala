@@ -210,12 +210,14 @@ object ProtocPlugin extends AutoPlugin with Compat {
 
     val thisProjectDeps = getAllProjectDeps(thisProjectRef.value)()
 
-    thisProjectDeps.map(ref => PB.protoSources in (ref, Compile)).foldLeft(Def.setting(Seq.empty[File])) {
-      case (acc, seq) => Def.settingDyn {
-        val values = acc.value ++ seq.value
-        Def.setting(values)
+    thisProjectDeps
+      .map(ref => (PB.protoSources in (ref, Compile), PB.includePaths in (ref, Compile)))
+      .foldLeft(Def.setting(Seq.empty[File])) {
+        case (acc, (srcs, includes)) => Def.settingDyn {
+          val values = acc.value ++ srcs.value ++ includes.value
+          Def.setting(values.distinct)
+        }
       }
-    }
   }
 
 }
