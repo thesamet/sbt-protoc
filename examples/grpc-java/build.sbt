@@ -11,7 +11,7 @@ def grpcExeFileName = {
 
 val grpcArtifactId = "protoc-gen-grpc-java"
 
-val grpcJavaVersion = "1.4.0"
+val grpcJavaVersion = "1.9.0"
 
 val grpcExeUrl =
   url(s"http://repo1.maven.org/maven2/io/grpc/${grpcArtifactId}/${grpcJavaVersion}/${grpcExeFileName}")
