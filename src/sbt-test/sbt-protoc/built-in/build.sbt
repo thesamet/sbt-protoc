@@ -1,12 +1,19 @@
-val protobufVersion = "3.3.1"
+import com.trueaccord.scalapb.compiler.Version.protobufVersion
 
-libraryDependencies += "com.google.protobuf" % "protobuf-java" % protobufVersion % "protobuf"
+PB.targets in Compile := Seq(
+  PB.gens.go -> (sourceManaged in Compile).value / "golang",
+  PB.gens.gateway -> (sourceManaged in Compile).value / "gateway",
+  PB.gens.swagger -> (sourceManaged in Compile).value / "swagger"
+)
+
+libraryDependencies ++= Seq(
+  "com.google.protobuf" % "protobuf-java" % protobufVersion % "protobuf",
+  "com.google.api.grpc" % "googleapis-common-protos" % "0.0.3" % "protobuf"
+)
 
 mainClass in compile := Some("whatever")
 
 commands ++= List(existsSource, existsClass)
-
-PB.targets in Compile := Seq(PB.gens.swagger -> (sourceManaged in Compile).value)
 
 def checkFile(state: State, settingKey: SettingKey[File], path: String): State = {
   val extracted = Project.extract(state)

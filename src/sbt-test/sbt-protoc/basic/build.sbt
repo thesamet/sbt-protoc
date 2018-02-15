@@ -6,8 +6,6 @@ excludeFilter in PB.generate := "test1.proto"
 
 unmanagedResourceDirectories in Compile ++= (PB.protoSources in Compile).value
 
-scalacOptions := Seq("-Dplugin.version=0.99.15-SNAPSHOT")
-
 TaskKey[Unit]("checkJar") := {
   val binary = (packageBin in Compile).value
   IO.withTemporaryDirectory{ dir =>
