@@ -12,6 +12,6 @@ private[sbtprotoc] trait Compat { self: ProtocPlugin.type =>
     import sbt.Cache.seqFormat
     import sbinary.DefaultProtocol._
     implicit val instance: sbinary.Format[Arguments] =
-      asProduct5(Arguments.apply)(Function.unlift(Arguments.unapply))
+      asProduct4(Arguments.apply)(Function.unlift(Arguments.unapply))
   }
 }

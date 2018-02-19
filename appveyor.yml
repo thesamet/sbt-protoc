@@ -1,0 +1,34 @@
+version: '{build}'
+os: Windows Server 2012
+
+environment:
+  SBT_OPTS: -Dfile.encoding=UTF8
+  JAVA_OPTS: -Dfile.encoding=UTF8
+
+install:
+  - ps: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      if (!(Test-Path -Path "C:\sbt" )) {
+        (new-object System.Net.WebClient).DownloadFile(
+          'https://github.com/sbt/sbt/releases/download/v0.13.17/sbt-0.13.17.zip',
+          'C:\sbt-bin-0.13.17.zip'
+        )
+        [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin-0.13.17.zip", "C:\sbt")
+      }
+  - cmd: SET PATH=C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET SBT_OPTS=-XX:MaxPermSize=2g -Xmx4g
+
+build_script:
+  - echo
+
+test_script:
+  - sbt ^test ^scripted
+  - ps: |
+      Get-ChildItem -Path examples -Directory |
+      foreach {
+          cd $_.FullName; sbt test
+      }
+
+cache:
+  - 'C:\sbt -> appveyor.yml'
+  - '%USERPROFILE%\.ivy2 -> appveyor.yml'

@@ -1,6 +1,8 @@
 sbt-protoc
 ==========
 
+[![Travis CI](https://travis-ci.org/scalapb/protoc-bridge.svg?branch=master)](https://travis-ci.org/scalapb/protoc-bridge) [![AppVeyor](https://ci.appveyor.com/api/projects/status/wl4evfm0l5smimer/branch/master?svg=true)](https://ci.appveyor.com/project/thesamet/sbt-protoc/branch/master)
+
 This plugin uses protoc to generate code from proto files. This SBT plugin is 
 meant supercede 
 [sbt-protobuf](https://github.com/sbt/sbt-protobuf/) and
@@ -22,9 +24,9 @@ Installation
 **Step 1: create `project/protoc.sbt` with:**
 
 ```
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.13")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.15")
 
-libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.7"
+libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.7.0"
 ```
 
 **Step 2: add to `build.sbt`:**
@@ -79,8 +81,11 @@ PB.protocOptions in Compile := Seq("-xyz")
 // Excluding some proto files:
 excludeFilter in PB.generate := "test-*.proto"
 
-// When compiling in Windows, Python is used to bridge protoc and this JVM.
-// To set the path for Python.exe:
+// Before version 0.99.15, when compiling in Windows, Python was used to bridge
+// protoc and this JVM. To set the path for Python.exe:
+// Note that this must be Python2 and not Python3.
+// Sicne version 0.99.15 this option has no effect, and will be removed in a
+// future version.
 PB.pythonExe := "/path/to/python.exe"
 
 // Rarely needed: override where proto files from library dependencies are

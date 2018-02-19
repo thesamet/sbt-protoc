@@ -22,7 +22,9 @@ object ProtocPlugin extends AutoPlugin with Compat {
 
       val runProtoc = SettingKey[Seq[String] => Int]("protoc-run-protoc", "A function that executes the protobuf compiler with the given arguments, returning the exit code of the compilation run.")
       val protocVersion = SettingKey[String]("protoc-version", "Version flag to pass to protoc-jar")
-      val pythonExe =  SettingKey[String]("python-executable", "Full path for a Python.exe (needed only on Windows)")
+
+      val pythonExe =  SettingKey[String]("python-executable", "Full path for a Python.exe (deprecated and ignored)")
+
       val deleteTargetDirectory =  SettingKey[Boolean]("delete-target-directory", "Delete target directory before regenerating sources.")
       val recompile = TaskKey[Boolean]("protoc-recompile")
 
@@ -37,7 +39,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
   private[sbtprotoc] final case class Arguments(
     includePaths: Seq[File],
     protocOptions: Seq[String],
-    pythonExe: String,
     deleteTargetDirectory: Boolean,
     targets: Seq[(File, Seq[String])]
   )
@@ -73,7 +74,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
     arguments := Arguments(
       includePaths = PB.includePaths.value,
       protocOptions = PB.protocOptions.value,
-      pythonExe = PB.pythonExe.value,
       deleteTargetDirectory = PB.deleteTargetDirectory.value,
       targets = PB.targets.value.map(target => (target.outputPath, target.options))
     ),
@@ -111,17 +111,17 @@ object ProtocPlugin extends AutoPlugin with Compat {
 
   case class UnpackedDependencies(dir: File, files: Seq[File])
 
-  private[this] def executeProtoc(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, log: Logger) : Int =
+  private[this] def executeProtoc(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], log: Logger) : Int =
     try {
       val incPath = includePaths.map("-I" + _.getCanonicalPath)
       protocbridge.ProtocBridge.run(protocCommand, targets,
         incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath),
-        pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance(pythonExe=pythonExe))
+        pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance)
     } catch { case e: Exception =>
       throw new RuntimeException("error occurred while compiling protobuf files: %s" format(e.getMessage), e)
     }
 
-  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], pythonExe: String, deleteTargetDirectory: Boolean, log: Logger) = {
+  private[this] def compile(protocCommand: Seq[String] => Int, schemas: Set[File], includePaths: Seq[File], protocOptions: Seq[String], targets: Seq[Target], deleteTargetDirectory: Boolean, log: Logger) = {
     // Sort by the length of path names to ensure that delete parent directories before deleting child directories.
     val generatedTargetDirs = targets.map(_.outputPath).sortBy(_.getAbsolutePath.length)
     generatedTargetDirs.foreach{ targetDir =>
@@ -137,7 +137,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       protocOptions.map("\t"+_).foreach(log.debug(_))
       schemas.foreach(schema => log.info("Compiling schema %s" format schema))
 
-      val exitCode = executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, pythonExe, log)
+      val exitCode = executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, log)
       if (exitCode != 0)
         sys.error("protoc returned exit code: %d" format exitCode)
 
@@ -178,7 +178,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
         (PB.includePaths in key).value ++ PB.dependentProjectsIncludePaths.value,
         (PB.protocOptions in key).value,
         (PB.targets in key).value,
-        (PB.pythonExe in key).value,
         (PB.deleteTargetDirectory in key).value,
         (streams in key).value.log)
 

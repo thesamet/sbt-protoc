@@ -43,4 +43,3 @@ lazy val sub1 = (project in file("sub1"))
     PB.includePaths in Compile += file("protos/src/main/protobuf")
   )
   .dependsOn(protos)
-
