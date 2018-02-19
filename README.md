@@ -1,6 +1,8 @@
 sbt-protoc
 ==========
 
+[![Travis CI](https://travis-ci.org/scalapb/protoc-bridge.svg?branch=master)](https://travis-ci.org/scalapb/protoc-bridge) [![AppVeyor](https://ci.appveyor.com/api/projects/status/wl4evfm0l5smimer/branch/master?svg=true)](https://ci.appveyor.com/project/thesamet/sbt-protoc/branch/master)
+
 This plugin uses protoc to generate code from proto files. This SBT plugin is 
 meant supercede 
 [sbt-protobuf](https://github.com/sbt/sbt-protobuf/) and
