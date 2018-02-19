@@ -81,8 +81,11 @@ PB.protocOptions in Compile := Seq("-xyz")
 // Excluding some proto files:
 excludeFilter in PB.generate := "test-*.proto"
 
-// When compiling in Windows, Python is used to bridge protoc and this JVM.
-// To set the path for Python.exe:
+// Before version 0.99.15, when compiling in Windows, Python was used to bridge
+// protoc and this JVM. To set the path for Python.exe:
+// Note that this must be Python2 and not Python3.
+// Sicne version 0.99.15 this option has no effect, and will be removed in a
+// future version.
 PB.pythonExe := "/path/to/python.exe"
 
 // Rarely needed: override where proto files from library dependencies are
