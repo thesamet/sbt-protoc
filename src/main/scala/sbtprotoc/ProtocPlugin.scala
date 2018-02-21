@@ -205,7 +205,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     val deps = buildDependencies.value.classpath
 
     def getAllProjectDeps(ref: ProjectRef)(visited: Set[ProjectRef] = Set(ref)): Seq[ProjectRef] =
-      deps.getOrElse(ref, Seq.empty).map(_.project).filterNot(visited).flatMap(getAllProjectDeps(_)(visited + ref)) :+ ref
+      deps.getOrElse(ref, Seq.empty).map(_.project).filterNot(visited.contains).flatMap(getAllProjectDeps(_)(visited + ref)) :+ ref
 
     val thisProjectDeps = getAllProjectDeps(thisProjectRef.value)()
 
