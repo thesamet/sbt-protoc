@@ -6,8 +6,8 @@ lazy val proto = (crossProject.crossType(CrossType.Pure) in file("proto"))
     // The trick is in this line:
     PB.protoSources in Compile := Seq(file("proto/src/main/protobuf")),
     libraryDependencies ++= Seq(
-      "com.trueaccord.scalapb" %%% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion,
-      "com.trueaccord.scalapb" %%% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion % "protobuf"
+      "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion,
+      "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
     )
   )
 

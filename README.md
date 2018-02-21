@@ -3,10 +3,10 @@ sbt-protoc
 
 [![Travis CI](https://travis-ci.org/scalapb/protoc-bridge.svg?branch=master)](https://travis-ci.org/scalapb/protoc-bridge) [![AppVeyor](https://ci.appveyor.com/api/projects/status/wl4evfm0l5smimer/branch/master?svg=true)](https://ci.appveyor.com/project/thesamet/sbt-protoc/branch/master)
 
-This plugin uses protoc to generate code from proto files. This SBT plugin is 
-meant supercede 
+This plugin uses protoc to generate code from proto files. This SBT plugin is
+meant supercede
 [sbt-protobuf](https://github.com/sbt/sbt-protobuf/) and
-[sbt-scalapb](https://github.com/trueaccord/sbt-scalapb/).
+[sbt-scalapb](https://github.com/thesamet/sbt-scalapb/).
 
 Highlights
 ----------
@@ -26,7 +26,7 @@ Installation
 ```
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.15")
 
-libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.7.0"
+libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.7.0"
 ```
 
 **Step 2: add to `build.sbt`:**

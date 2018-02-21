@@ -3,11 +3,11 @@ import com.google.protobuf.Descriptors._
 import com.google.protobuf.compiler.PluginProtos.{CodeGeneratorResponse, CodeGeneratorRequest}
 import scala.collection.JavaConverters._
 
-import com.trueaccord.scalapb.compiler.{DescriptorPimps, FunctionalPrinter}
+import scalapb.compiler.{DescriptorPimps, FunctionalPrinter}
 
 /** This is the interface that code generators need to implement. */
 object MyCodeGenerator extends protocbridge.ProtocCodeGenerator with DescriptorPimps {
-  val params = com.trueaccord.scalapb.compiler.GeneratorParams()
+  val params = scalapb.compiler.GeneratorParams()
 
   def run(input: Array[Byte]): Array[Byte] = {
     val request = CodeGeneratorRequest.parseFrom(input)
