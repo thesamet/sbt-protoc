@@ -1,11 +1,11 @@
-import com.trueaccord.scalapb.compiler.Version.scalapbVersion
+import scalapb.compiler.Version.scalapbVersion
 
 lazy val protos = (project in file("protos"))
   .settings(
     name := "protos",
     libraryDependencies ++= Seq(
       "com.thesamet.test" % "test-protos" % "0.1" % "protobuf",
-      "com.trueaccord.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf"
+      "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf"
     ),
 
     // Dependencies marked with "protobuf" get extracted to target / protobuf_external
@@ -32,7 +32,7 @@ lazy val sub1 = (project in file("sub1"))
     // dependency on protos project.
     libraryDependencies ++= Seq(
       "com.thesamet.test" % "test-protos" % "0.1" % "protobuf",
-      "com.trueaccord.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf"
+      "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf"
     ),
 
     PB.targets in Compile := Seq(

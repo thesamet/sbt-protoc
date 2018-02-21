@@ -7,5 +7,5 @@
 }
 
 libraryDependencies ++= Seq(
-  "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.7"
+  "com.thesamet.scalapb" %% "compilerplugin" % "0.7.0"
 )
