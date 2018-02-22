@@ -213,7 +213,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       .map(ref => (PB.protoSources in (ref, Compile), PB.includePaths in (ref, Compile)))
       .foldLeft(Def.setting(Seq.empty[File])) {
         case (acc, (srcs, includes)) => Def.settingDyn {
-          val values = acc.value ++ srcs.value ++ includes.value
+          val values = acc.value ++ srcs.?.value.getOrElse(Nil) ++ includes.?.value.getOrElse(Nil)
           Def.setting(values.distinct)
         }
       }
