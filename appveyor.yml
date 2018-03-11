@@ -4,6 +4,10 @@ os: Windows Server 2012
 environment:
   SBT_OPTS: -Dfile.encoding=UTF8
   JAVA_OPTS: -Dfile.encoding=UTF8
+  matrix:
+      - JAVA_HOME: C:\Program Files\Java\jdk1.7.0
+      - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
+      - JAVA_HOME: C:\Program Files\Java\jdk9
 
 install:
   - ps: |
