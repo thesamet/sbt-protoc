@@ -49,4 +49,4 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
-crossSbtVersions := Seq("0.13.16", "1.1.6")
+crossSbtVersions := Seq("0.13.17", "1.1.6")
