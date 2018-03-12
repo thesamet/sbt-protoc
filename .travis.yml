@@ -1,9 +1,10 @@
 jdk:
   - oraclejdk8
+  - oraclejdk9
 language: scala
 sudo: false
 script:
    - sbt ^test ^scripted
    - cd examples
-   - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
+   - for d in */ ; do cd "$d" && $(if [ -f "./project/build.properties" ]; then echo "sbt test" ; else echo "sbt -sbt-version 0.13.17 test" ; fi) && cd ../ ; done
 

@@ -40,3 +40,4 @@ PB.targets in Compile := Seq(
 )
 
 libraryDependencies += "io.grpc" % "grpc-all" % grpcJavaVersion
+libraryDependencies += "javax.annotation" % "javax.annotation-api" % "1.3.2" // for javax.annotation.Generated in Java 9
