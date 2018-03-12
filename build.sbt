@@ -20,8 +20,6 @@ libraryDependencies ++= Seq(
 
 sbtPlugin := true
 
-ScriptedPlugin.scriptedSettings
-
 scriptedBufferLog := false
 
 scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
