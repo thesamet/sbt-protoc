@@ -6,6 +6,7 @@ import java.io.File
 
 import protocbridge.Target
 import sbt.plugins.JvmPlugin
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 
 
 object ProtocPlugin extends AutoPlugin with Compat {
@@ -57,7 +58,21 @@ object ProtocPlugin extends AutoPlugin with Compat {
     includeFilter in PB.generate := "*.proto",
     PB.externalIncludePath := target.value / "protobuf_external",
 
-    libraryDependencies ++= (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies.map(makeArtifact)),
+    libraryDependencies ++= {
+      val libs = (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies)
+      platformDepsCrossVersion.?.value match {
+        case Some(c) =>
+          libs.map{ lib =>
+            val a = makeArtifact(lib)
+            if (lib.crossVersion)
+              a cross c
+            else
+              a
+          }
+        case None =>
+          libs.map(makeArtifact)
+      }
+    },
 
     managedClasspath in ProtobufConfig := {
       val artifactTypes: Set[String] = (classpathTypes in ProtobufConfig).value
