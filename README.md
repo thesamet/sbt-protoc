@@ -39,6 +39,15 @@ PB.targets in Compile := Seq(
 )
 ```
 
+A version of `protobuf-java` is going to get added to the runtime
+dependencies. To explicitly set this version you can write:
+
+```
+PB.targets in Compile := Seq(
+  PB.gens.java("3.6.0rc1") -> (sourceManaged in Compile).value
+)
+```
+
 For ScalaPB:
 ```
 PB.targets in Compile := Seq(
