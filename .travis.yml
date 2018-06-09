@@ -3,7 +3,7 @@ jdk:
 language: scala
 sudo: false
 script:
-   - sbt ^test ^scripted
+   - sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
    - cd examples
    - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
 
