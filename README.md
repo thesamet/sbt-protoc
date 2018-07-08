@@ -108,6 +108,9 @@ PB.targets in Compile := Seq(
 
 // Use a locally provided protoc:
 PB.runProtoc in Compile := (args => Process("/path/to/protoc", args)!)
+
+// Prevents the plugin from adding libraryDependencies to your project
+PB.additionalDependencies := Nil
 ```
 
 The following setting is needed, if you want to generate .proto definitions

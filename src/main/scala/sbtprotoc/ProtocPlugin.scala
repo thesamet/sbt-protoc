@@ -15,6 +15,10 @@ object ProtocPlugin extends AutoPlugin with Compat {
         "protoc-include-paths",
         "The paths that contain *.proto dependencies."
       )
+      val additionalDependencies = SettingKey[Seq[ModuleID]](
+        "additional-dependencies",
+        "Additional dependencies to be added to library dependencies."
+      )
       val externalIncludePath = SettingKey[File](
         "protoc-external-include-path",
         "The path to which protobuf:libraryDependencies are extracted and which is used as protobuf:includePath for protoc"
@@ -77,7 +81,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
   def protobufGlobalSettings: Seq[Def.Setting[_]] = Seq(
     includeFilter in PB.generate := "*.proto",
     PB.externalIncludePath := target.value / "protobuf_external",
-    libraryDependencies ++= {
+    PB.additionalDependencies := {
       val libs = (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies)
       platformDepsCrossVersion.?.value match {
         case Some(c) =>
@@ -92,6 +96,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
           libs.map(makeArtifact)
       }
     },
+    libraryDependencies ++= PB.additionalDependencies.value,
     managedClasspath in ProtobufConfig := {
       val artifactTypes: Set[String] = (classpathTypes in ProtobufConfig).value
       Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
