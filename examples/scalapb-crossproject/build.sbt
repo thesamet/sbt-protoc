@@ -2,20 +2,23 @@ import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalapb.compiler.Version.scalapbVersion
 
 val sharedSettings = Seq(
-  name         := "osc",
+  name         := "example",
   version      := "0.1.0",
   scalaVersion := "2.11.12",
   PB.protoSources in Compile := Seq((baseDirectory in ThisBuild).value / "src"/ "main" / "protobuf"),
   PB.targets in Compile := Seq(
-    scalapb.gen() -> (sourceManaged in Compile).value,
+    scalapb.gen() -> (sourceManaged in Compile).value / "protos",
   ),
   libraryDependencies += "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapbVersion,
   scalaJSUseMainModuleInitializer := true,
+  buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+  buildInfoPackage := "hello"
 )
 
 lazy val example = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .crossType(CrossType.Pure)
   .in(file("."))
+  .enablePlugins(BuildInfoPlugin)
   .settings(sharedSettings)
   .jsSettings(crossScalaVersions := Seq("2.11.12", "2.12.6"))
   .jvmSettings(crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6"))
