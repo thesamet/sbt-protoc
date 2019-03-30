@@ -5,21 +5,21 @@ environment:
   SBT_OPTS: -Dfile.encoding=UTF8
   JAVA_OPTS: -Dfile.encoding=UTF8
   matrix:
-      - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
-      - JAVA_HOME: C:\Program Files\Java\jdk9
+      - JAVA_HOME: C:\Program Files\Java\jdk10
+      - JAVA_HOME: C:\Program Files\Java\jdk11
 
 install:
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
       if (!(Test-Path -Path "C:\sbt" )) {
         (new-object System.Net.WebClient).DownloadFile(
-          'https://github.com/sbt/sbt/releases/download/v0.13.17/sbt-0.13.17.zip',
-          'C:\sbt-bin-0.13.17.zip'
+          'https://piccolo.link/sbt-1.2.8.zip',
+          'C:\sbt-bin-1.2.8.zip'
         )
-        [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin-0.13.17.zip", "C:\sbt")
+        [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin-1.2.8.zip", "C:\sbt")
       }
   - cmd: SET PATH=C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
-  - cmd: SET SBT_OPTS=-XX:MaxPermSize=2g -Xmx4g
+  - cmd: SET SBT_OPTS=-Xmx4g
 
 build_script:
   - echo
