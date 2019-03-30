@@ -24,9 +24,9 @@ Installation
 **Step 1: create `project/protoc.sbt` with:**
 
 ```
-addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.15")
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.20")
 
-libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.7.0"
+libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.0-M1"
 ```
 
 **Step 2: add to `build.sbt`:**
@@ -44,7 +44,7 @@ dependencies. To explicitly set this version you can write:
 
 ```
 PB.targets in Compile := Seq(
-  PB.gens.java("3.6.0rc1") -> (sourceManaged in Compile).value
+  PB.gens.java("3.7.0") -> (sourceManaged in Compile).value
 )
 ```
 
