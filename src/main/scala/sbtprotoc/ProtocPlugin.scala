@@ -102,7 +102,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
     },
     ivyConfigurations += ProtobufConfig,
-    PB.protocVersion := "-v360",
+    PB.protocVersion := "-v370",
     PB.pythonExe := "python",
     PB.deleteTargetDirectory := true
   )

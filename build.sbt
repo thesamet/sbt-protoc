@@ -16,11 +16,11 @@ scalacOptions += {
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
 
 libraryDependencies ++= Seq(
-  "com.github.os72"      % "protoc-jar"     % "3.6.0",
+  "com.github.os72"      % "protoc-jar"     % "3.7.0.1",
   "com.thesamet.scalapb" %% "protoc-bridge" % "0.7.3"
 )
 
-sbtPlugin := true
+enablePlugins(SbtPlugin)
 
 scriptedBufferLog := false
 
@@ -49,4 +49,4 @@ releaseProcess := Seq[ReleaseStep](
   pushChanges
 )
 
-crossSbtVersions := Seq("0.13.16", "1.1.6")
+crossSbtVersions := Seq("0.13.18", "1.2.8")
