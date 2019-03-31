@@ -27,7 +27,7 @@ build_script:
 test_script:
   - sbt ^test ^scripted
   - ps: |
-      Get-ChildItem -Path examples -Directory |
+      Get-ChildItem -Path examples -Directory -ErrorAction 'Stop' |
       foreach {
           cd $_.FullName; sbt test
       }

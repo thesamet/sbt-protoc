@@ -78,7 +78,7 @@ PB.includePaths in Compile ++= Seq(file("/some/other/path"))
 
 // Make protos from some Jar available to import.
 libraryDependencies ++= Seq(
-  "com.google.protobuf" % "protobuf-java" % "3.5.1" % "protobuf"
+  "com.google.protobuf" % "protobuf-java" % "3.7.0" % "protobuf"
 )
 
 // Changing where to look for protos to compile (default src/main/protobuf):
