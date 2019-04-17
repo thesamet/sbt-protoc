@@ -150,11 +150,11 @@ object ProtocPlugin extends AutoPlugin with Compat {
       log: Logger
   ): Int =
     try {
-      val incPath = includePaths.map("-I" + _.getCanonicalPath)
+      val incPath = includePaths.map("-I" + _.getAbsolutePath)
       protocbridge.ProtocBridge.run(
         protocCommand,
         targets,
-        incPath ++ protocOptions ++ schemas.map(_.getCanonicalPath),
+        incPath ++ protocOptions ++ schemas.map(_.getAbsolutePath),
         pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance
       )
     } catch {
