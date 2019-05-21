@@ -139,7 +139,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
   override def projectSettings: Seq[Def.Setting[_]] =
     protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings)
 
-  case class UnpackedDependencies(dir: File, mappedFiles: Map[File,Seq[File]]) {
+  case class UnpackedDependencies(dir: File, mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
   }
 
@@ -214,7 +214,11 @@ object ProtocPlugin extends AutoPlugin with Compat {
     }
   }
 
-  private[this] def unpack(deps: Seq[File], extractTarget: File, log: Logger): Seq[(File,Seq[File])] = {
+  private[this] def unpack(
+      deps: Seq[File],
+      extractTarget: File,
+      log: Logger
+  ): Seq[(File, Seq[File])] = {
     IO.createDirectory(extractTarget)
     deps.map { dep =>
       val seq = IO.unzip(dep, extractTarget, "*.proto").toSeq
