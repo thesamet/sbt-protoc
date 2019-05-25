@@ -12,9 +12,4 @@
 
 -> existsSource test/Test2.java
 
-> compile
-> ++ 2.11.8
-> compile
-> existsSource test/Test2.java
-
 > checkJar
