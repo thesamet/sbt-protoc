@@ -139,7 +139,9 @@ object ProtocPlugin extends AutoPlugin with Compat {
   override def projectSettings: Seq[Def.Setting[_]] =
     protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings)
 
-  case class UnpackedDependencies(dir: File, files: Seq[File])
+  case class UnpackedDependencies(dir: File, mappedFiles: Map[File, Seq[File]]) {
+    def files: Seq[File] = mappedFiles.values.flatten.toSeq
+  }
 
   private[this] def executeProtoc(
       protocCommand: Seq[String] => Int,
@@ -212,12 +214,16 @@ object ProtocPlugin extends AutoPlugin with Compat {
     }
   }
 
-  private[this] def unpack(deps: Seq[File], extractTarget: File, log: Logger): Seq[File] = {
+  private[this] def unpack(
+      deps: Seq[File],
+      extractTarget: File,
+      log: Logger
+  ): Seq[(File, Seq[File])] = {
     IO.createDirectory(extractTarget)
-    deps.flatMap { dep =>
+    deps.map { dep =>
       val seq = IO.unzip(dep, extractTarget, "*.proto").toSeq
       if (seq.nonEmpty) log.debug("Extracted " + seq.mkString("\n * ", "\n * ", ""))
-      seq
+      dep -> seq
     }
   }
 
@@ -266,7 +272,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       (PB.externalIncludePath in key).value,
       (streams in key).value.log
     )
-    UnpackedDependencies((PB.externalIncludePath in key).value, extractedFiles)
+    UnpackedDependencies((PB.externalIncludePath in key).value, extractedFiles.toMap)
   }
 
   /**
