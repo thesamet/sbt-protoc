@@ -1,4 +1,6 @@
-lazy val proto = (crossProject.crossType(CrossType.Pure) in file("proto"))
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
+
+lazy val proto = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("proto"))
   .settings(
     PB.targets in Compile := Seq(
       scalapb.gen() -> (sourceManaged in Compile).value
