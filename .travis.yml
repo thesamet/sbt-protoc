@@ -1,5 +1,8 @@
+os:
+- linux
+- osx
 jdk:
-  - oraclejdk8
+- openjdk10
 language: scala
 sudo: false
 before_install:
@@ -9,4 +12,3 @@ script:
    - sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
    - cd examples
    - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
-
