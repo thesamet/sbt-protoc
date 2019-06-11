@@ -6,7 +6,6 @@ jdk:
 language: scala
 sudo: false
 before_install:
-- sudo apt-get update
 - curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x
 script:
    - sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
