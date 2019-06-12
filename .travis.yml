@@ -1,9 +1,11 @@
-os:
-- linux
-- osx
+matrix:
+    include:
+    - os: linux
+      language: scala
+    - os: osx
+
 jdk:
 - openjdk10
-language: scala
 sudo: false
 before_install:
 - curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x
