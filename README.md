@@ -6,7 +6,7 @@ sbt-protoc
 This plugin uses protoc to generate code from proto files. This SBT plugin is
 meant to supersede
 [sbt-protobuf](https://github.com/sbt/sbt-protobuf/) and
-[sbt-scalapb](https://github.com/thesamet/sbt-scalapb/).
+[sbt-scalapb](https://github.com/scalapb/sbt-scalapb).
 
 Highlights
 ----------
