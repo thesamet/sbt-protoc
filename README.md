@@ -23,7 +23,7 @@ Installation
 
 **Step 1: create `project/protoc.sbt` with:**
 
-```
+```scala
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.20")
 
 libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.0-M1"
@@ -33,7 +33,7 @@ libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.0-M1"
 
 If you only want to generate Java:
 
-```
+```scala
 PB.targets in Compile := Seq(
   PB.gens.java -> (sourceManaged in Compile).value
 )
@@ -42,21 +42,21 @@ PB.targets in Compile := Seq(
 A version of `protobuf-java` is going to get added to the runtime
 dependencies. To explicitly set this version you can write:
 
-```
+```scala
 PB.targets in Compile := Seq(
   PB.gens.java("3.7.0") -> (sourceManaged in Compile).value
 )
 ```
 
 For ScalaPB:
-```
+```scala
 PB.targets in Compile := Seq(
   scalapb.gen() -> (sourceManaged in Compile).value
 )
 ```
 
 To generate Java + Scala with Java conversions:
-```
+```scala
 PB.targets in Compile := Seq(
   PB.gens.java -> (sourceManaged in Compile).value,
   scalapb.gen(javaConversions = true) -> (sourceManaged in Compile).value
@@ -72,7 +72,7 @@ The options below need to be scoped to either `Compile` or `Test` (if unsure,
 you probably want `Compile`)
 
 Example settings:
-```
+```scala
 // Additional directories to search for imports:
 PB.includePaths in Compile ++= Seq(file("/some/other/path"))
 
@@ -116,6 +116,6 @@ PB.additionalDependencies := Nil
 The following setting is needed, if you want to generate .proto definitions
 in the `Test` scope.
 
-```
+```scala
 inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
 ```
