@@ -26,7 +26,7 @@ Installation
 ```scala
 addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.20")
 
-libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.0-M1"
+libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.0"
 ```
 
 **Step 2: add to `build.sbt`:**
@@ -62,6 +62,26 @@ PB.targets in Compile := Seq(
   scalapb.gen(javaConversions = true) -> (sourceManaged in Compile).value
 )
 ```
+
+To download an artifact and use it as a code generator plugin:
+
+```scala
+libraryDependencies += "io.grpc" % "protoc-gen-grpc-java" % "1.23.0" asProtocPlugin
+
+PB.targets in Compile := Seq(
+  PB.gens.plugin("grpc-java") -> (sourceManaged in Compile).value,
+)
+```
+
+Note the `asProtocPlugin` provided to the dependency, this is equivalent to:
+```
+libraryDependencies += "io.grpc" % "protoc-gen-grpc-java" % "1.23.0" % "protobuf" artifacts(
+  Artifact("protoc-gen-grpc-java", PB.ProtocPlugin, "exe", "linux-x86_64"))
+```
+
+with the operating system replaced accordingly to the system you are running on. You can use the
+full syntax in case the code generator you are trying to download follows a
+different pattern.
 
 **Step 3: Put some protos in src/main/protobuf and compile**
 

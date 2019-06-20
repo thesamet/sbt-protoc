@@ -7,6 +7,8 @@ import java.io.File
 import protocbridge.Target
 import sbt.plugins.JvmPlugin
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
+import java.{util => ju}
+import java.nio.file.attribute.PosixFilePermission
 
 object ProtocPlugin extends AutoPlugin with Compat {
   object autoImport {
@@ -30,6 +32,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       val generate = TaskKey[Seq[File]]("protoc-generate", "Compile the protobuf sources.")
       val unpackDependencies =
         TaskKey[UnpackedDependencies]("protoc-unpack-dependencies", "Unpack dependencies.")
+
       val protocOptions =
         SettingKey[Seq[String]]("protoc-options", "Additional options to be passed to protoc")
       val protoSources =
@@ -53,8 +56,20 @@ object ProtocPlugin extends AutoPlugin with Compat {
       )
       val recompile = TaskKey[Boolean]("protoc-recompile")
 
-      val Target = protocbridge.Target
-      val gens   = protocbridge.gens
+      val Target       = protocbridge.Target
+      val gens         = protocbridge.gens
+      val ProtocPlugin = "protoc-plugin"
+    }
+
+    implicit class AsProtocPlugin(val moduleId: ModuleID) extends AnyVal {
+      def asProtocPlugin: ModuleID = {
+        moduleId % "protobuf" artifacts (Artifact(
+          name = moduleId.name,
+          `type` = PB.ProtocPlugin,
+          extension = "exe",
+          classifier = SystemDetector.detectedClassifier()
+        ))
+      }
     }
   }
 
@@ -98,6 +113,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       }
     },
     libraryDependencies ++= PB.additionalDependencies.value,
+    classpathTypes in ProtobufConfig += PB.ProtocPlugin,
     managedClasspath in ProtobufConfig := {
       val artifactTypes: Set[String] = (classpathTypes in ProtobufConfig).value
       Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
@@ -240,6 +256,9 @@ object ProtocPlugin extends AutoPlugin with Compat {
     }
   }
 
+  private[this] def isNativePlugin(dep: Attributed[File]): Boolean =
+    dep.get(artifact.key).exists(_.`type` == PB.ProtocPlugin)
+
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
       val toInclude = (includeFilter in key).value
@@ -253,12 +272,26 @@ object ProtocPlugin extends AutoPlugin with Compat {
         )
       // Include Scala binary version like "_2.11" for cross building.
       val cacheFile = (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
+
+      val nativePlugins =
+        (managedClasspath in (ProtobufConfig, key)).value.filter(isNativePlugin _)
+
+      // Ensure all plugins are executable
+      nativePlugins.foreach { dep =>
+        dep.data.setExecutable(true)
+      }
+
+      val nativePluginsArgs = nativePlugins.map { a =>
+        val dep = a.get(artifact.key).get
+        s"--plugin=${dep.name}=${a.data.absolutePath}"
+      }
+
       def compileProto(): Set[File] =
         compile(
           (PB.runProtoc in key).value,
           schemas,
           (PB.includePaths in key).value ++ PB.dependentProjectsIncludePaths.value,
-          (PB.protocOptions in key).value,
+          (PB.protocOptions in key).value ++ nativePluginsArgs,
           (PB.targets in key).value,
           (PB.deleteTargetDirectory in key).value,
           (streams in key).value.log
