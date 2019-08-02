@@ -81,6 +81,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
   def protobufGlobalSettings: Seq[Def.Setting[_]] = Seq(
     includeFilter in PB.generate := "*.proto",
     PB.externalIncludePath := target.value / "protobuf_external",
+    PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
     PB.additionalDependencies := {
       val libs = (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies)
       platformDepsCrossVersion.?.value match {
@@ -121,7 +122,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
     },
     PB.protocOptions := Nil,
     PB.protocOptions := PB.protocOptions.?.value.getOrElse(Nil),
-    PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
     PB.protoSources := PB.protoSources.?.value.getOrElse(Nil),
     PB.protoSources += sourceDirectory.value / "protobuf",
     PB.includePaths := PB.includePaths.?.value.getOrElse(Nil),
