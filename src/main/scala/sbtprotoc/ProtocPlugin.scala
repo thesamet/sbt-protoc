@@ -217,13 +217,26 @@ object ProtocPlugin extends AutoPlugin with Compat {
   private[this] def unpack(
       deps: Seq[File],
       extractTarget: File,
-      log: Logger
+      streams: TaskStreams
   ): Seq[(File, Seq[File])] = {
-    IO.createDirectory(extractTarget)
+    def cachedExtractDep(dep: File): Seq[File] = {
+      val cached = FileFunction.cached(
+        streams.cacheDirectory / dep.name,
+        inStyle = FilesInfo.lastModified,
+        outStyle = FilesInfo.exists
+      ) { deps =>
+        IO.createDirectory(extractTarget)
+        deps.flatMap { dep =>
+          val set = IO.unzip(dep, extractTarget, "*.proto")
+          if (set.nonEmpty) streams.log.debug("Extracted " + set.mkString("\n * ", "\n * ", ""))
+          set
+        }
+      }
+      cached(Set(dep)).toSeq
+    }
+
     deps.map { dep =>
-      val seq = IO.unzip(dep, extractTarget, "*.proto").toSeq
-      if (seq.nonEmpty) log.debug("Extracted " + seq.mkString("\n * ", "\n * ", ""))
-      dep -> seq
+      dep -> cachedExtractDep(dep)
     }
   }
 
@@ -270,7 +283,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     val extractedFiles = unpack(
       (managedClasspath in (ProtobufConfig, key)).value.map(_.data),
       (PB.externalIncludePath in key).value,
-      (streams in key).value.log
+      (streams in key).value
     )
     UnpackedDependencies((PB.externalIncludePath in key).value, extractedFiles.toMap)
   }
