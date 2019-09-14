@@ -7,8 +7,6 @@ import java.io.File
 import protocbridge.Target
 import sbt.plugins.JvmPlugin
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
-import java.{util => ju}
-import java.nio.file.attribute.PosixFilePermission
 
 object ProtocPlugin extends AutoPlugin with Compat {
   object autoImport {
