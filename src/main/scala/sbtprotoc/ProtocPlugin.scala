@@ -60,7 +60,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     }
 
     implicit class AsProtocPlugin(val moduleId: ModuleID) extends AnyVal {
-      def asProtocPlugin: ModuleID = {
+      def asProtocPlugin(): ModuleID = {
         moduleId % "protobuf" artifacts (Artifact(
           name = moduleId.name,
           `type` = PB.ProtocPlugin,

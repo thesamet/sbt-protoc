@@ -66,7 +66,7 @@ PB.targets in Compile := Seq(
 To download an artifact and use it as a code generator plugin:
 
 ```scala
-libraryDependencies += "io.grpc" % "protoc-gen-grpc-java" % "1.23.0" asProtocPlugin
+libraryDependencies += "io.grpc" % "protoc-gen-grpc-java" % "1.23.0" asProtocPlugin()
 
 PB.targets in Compile := Seq(
   PB.gens.plugin("grpc-java") -> (sourceManaged in Compile).value,
