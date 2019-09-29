@@ -1,8 +1,7 @@
-matrix:
-    include:
-    - os: linux
-      language: scala
-    - os: osx
+language: scala
+os:
+- linux
+- osx
 
 jdk:
 - openjdk10
