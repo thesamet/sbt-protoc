@@ -5,7 +5,7 @@ matrix:
   - os: osx
     language: java
   - os: windows
-    language: generic
+    language: shell
 
 jdk:
 - openjdk10
