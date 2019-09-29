@@ -4,13 +4,16 @@ matrix:
     language: scala
   - os: osx
     language: java
+  - os: windows
+    languge: generic
 
 jdk:
 - openjdk10
 
 sudo: false
 before_install:
-- curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x
+- if [ "$TRAVIS_OS_NAME" = "windows" ]; then choco install zulu10 sbt; fi
+- if [ "$TRAVIS_OS_NAME" != "windows" ]; then curl https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/travis_setup.sh | bash -x; fi
 script:
    - sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
    - cd examples
