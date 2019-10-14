@@ -135,14 +135,12 @@ object ProtocPlugin extends AutoPlugin with Compat {
       arguments.previous.exists(_ != arguments.value)
     },
     PB.protocOptions := Nil,
-    PB.protocOptions := PB.protocOptions.?.value.getOrElse(Nil),
-    PB.protoSources := PB.protoSources.?.value.getOrElse(Nil),
+    PB.protoSources := Nil,
     PB.protoSources += sourceDirectory.value / "protobuf",
-    PB.includePaths := PB.includePaths.?.value.getOrElse(Nil),
-    PB.includePaths ++= PB.protoSources.value,
+    PB.includePaths := PB.protoSources.value,
     PB.includePaths += PB.externalIncludePath.value,
     PB.dependentProjectsIncludePaths := protocIncludeDependencies.value,
-    PB.targets := PB.targets.?.value.getOrElse(Nil),
+    PB.targets := Nil,
     PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
     PB.runProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)

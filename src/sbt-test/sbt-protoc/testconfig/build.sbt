@@ -1,3 +1,5 @@
+Project.inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
+
 val protobufVersion = "3.7.0"
 
 libraryDependencies += "com.google.protobuf" % "protobuf-java" % protobufVersion % "protobuf"
@@ -5,8 +7,6 @@ libraryDependencies += "com.google.protobuf" % "protobuf-java" % protobufVersion
 PB.targets in Compile := Seq(PB.gens.java(protobufVersion) -> (sourceManaged in Compile).value)
 
 PB.targets in Test := Seq(PB.gens.java(protobufVersion) -> (sourceManaged in Test).value)
-
-Project.inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
 
 commands ++= List(existsSource, existsClass, existsTestClass, existsTestSource)
 
