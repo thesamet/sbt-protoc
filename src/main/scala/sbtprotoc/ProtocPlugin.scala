@@ -240,7 +240,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         IO.createDirectory(extractTarget)
         deps.flatMap { dep =>
           val set = IO.unzip(dep, extractTarget, "*.proto")
-          if (set.nonEmpty) streams.log.debug("Extracted " + set.mkString("\n * ", "\n * ", ""))
+          if (set.nonEmpty) streams.log.debug("Extracted from " + dep + set.mkString("\n * ", "\n * ", ""))
           set
         }
       }

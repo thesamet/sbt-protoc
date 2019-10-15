@@ -139,3 +139,12 @@ in the `Test` scope.
 ```scala
 inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
 ```
+
+Debugging
+---------
+
+Show proto files extracted and where there are comming from:
+ ```scala
+sbt> set logLevel := Level.Debug
+sbt> protocUnpackDependencies
+ ```
