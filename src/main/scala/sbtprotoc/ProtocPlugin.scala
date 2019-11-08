@@ -2,8 +2,9 @@ package sbtprotoc
 
 import sbt._
 import Keys._
-import java.io.File
+import java.io.{ByteArrayOutputStream, File, OutputStream}
 
+import com.github.os72.protocjar.Protoc
 import protocbridge.Target
 import sbt.plugins.JvmPlugin
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
@@ -37,7 +38,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         SettingKey[Seq[File]]("protoc-sources", "Directories to look for source files")
       val targets = SettingKey[Seq[Target]]("protoc-targets", "List of targets to generate")
 
-      val runProtoc = SettingKey[Seq[String] => Int](
+      val runProtoc = TaskKey[Seq[String] => Int](
         "protoc-run-protoc",
         "A function that executes the protobuf compiler with the given arguments, returning the exit code of the compilation run."
       )
@@ -142,9 +143,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.dependentProjectsIncludePaths := protocIncludeDependencies.value,
     PB.targets := Nil,
     PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
-    PB.runProtoc := { args =>
-      com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
-    },
+    PB.runProtoc := runProtocTask(streams in PB.generate).value, // aggregate logs within PB.generate
     sourceGenerators += PB.generate.taskValue
   )
 
@@ -309,6 +308,29 @@ object ProtocPlugin extends AutoPlugin with Compat {
       } else {
         cachedCompile(schemas).toSeq
       }
+    }
+
+  // Forward lines from an OutputStream to a given logger at a specified level
+  private class LoggingOutputStream(logger: Logger, level: Level.Value) extends OutputStream {
+    private val baos = new ByteArrayOutputStream
+    override def write(b: Int): Unit = {
+      baos.write(b)
+      val lineSoFar = baos.toString
+      if (lineSoFar.endsWith(System.lineSeparator)) {
+        logger.log(level, lineSoFar.stripSuffix(System.lineSeparator))
+        baos.reset
+      }
+    }
+  }
+
+  private[this] def runProtocTask(
+      streams: TaskKey[TaskStreams]
+  ): Def.Initialize[Task[Seq[String] => Int]] =
+    Def.task {
+      val logger = streams.value.log
+      val toInfo = new LoggingOutputStream(logger, Level.Info)
+      val toWarn = new LoggingOutputStream(logger, Level.Warn)
+      args => Protoc.runProtoc(PB.protocVersion.value +: args.toArray, toInfo, toWarn)
     }
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) = Def.task {
