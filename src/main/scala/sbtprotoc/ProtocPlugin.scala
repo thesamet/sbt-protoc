@@ -217,11 +217,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
       if (exitCode != 0)
         sys.error("protoc returned exit code: %d" format exitCode)
 
-      log.info("Compiling protobuf")
-      generatedTargetDirs.foreach { dir =>
-        log.info("Protoc target directory: %s".format(dir.absolutePath))
-      }
-
       targets.flatMap { ot =>
         (ot.outputPath ** ("*.java" | "*.scala")).get
       }.toSet
