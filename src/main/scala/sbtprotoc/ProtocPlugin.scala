@@ -344,5 +344,4 @@ object ProtocPlugin extends AutoPlugin with Compat {
           }
       }
   }
-
 }
