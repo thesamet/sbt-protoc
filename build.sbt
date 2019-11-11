@@ -17,7 +17,8 @@ addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
 
 libraryDependencies ++= Seq(
   "com.github.os72"      % "protoc-jar"     % "3.7.1",
-  "com.thesamet.scalapb" %% "protoc-bridge" % "0.7.13"
+  "com.thesamet.scalapb" %% "protoc-bridge" % "0.7.13",
+  "org.scalatest"        %% "scalatest"     % "3.0.8" % "test"
 )
 
 enablePlugins(SbtPlugin)

@@ -2,7 +2,7 @@ package sbtprotoc
 
 import sbt._
 import Keys._
-import java.io.{ByteArrayOutputStream, File, OutputStream}
+import java.io.File
 
 import com.github.os72.protocjar.Protoc
 import protocbridge.Target
@@ -310,26 +310,13 @@ object ProtocPlugin extends AutoPlugin with Compat {
       }
     }
 
-  // Forward lines from an OutputStream to a given logger at a specified level
-  private class LoggingOutputStream(logger: Logger, level: Level.Value) extends OutputStream {
-    private val baos = new ByteArrayOutputStream
-    override def write(b: Int): Unit = {
-      baos.write(b)
-      val lineSoFar = baos.toString
-      if (lineSoFar.endsWith(System.lineSeparator)) {
-        logger.log(level, lineSoFar.stripSuffix(System.lineSeparator))
-        baos.reset
-      }
-    }
-  }
-
   private[this] def runProtocTask(
       streams: TaskKey[TaskStreams]
   ): Def.Initialize[Task[Seq[String] => Int]] =
     Def.task {
       val logger = streams.value.log
-      val toInfo = new LoggingOutputStream(logger, Level.Info)
-      val toWarn = new LoggingOutputStream(logger, Level.Warn)
+      val toInfo = LoggingOutputStream(logger, Level.Info)
+      val toWarn = LoggingOutputStream(logger, Level.Warn)
       args => Protoc.runProtoc(PB.protocVersion.value +: args.toArray, toInfo, toWarn)
     }
 
