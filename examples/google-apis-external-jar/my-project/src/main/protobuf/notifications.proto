@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/type/latlng.proto";
+import "google/type/color.proto";
+
+message TestMessage {
+  google.protobuf.Timestamp effectiveTS = 1;
+  google.protobuf.Timestamp recordedTS = 2;
+  google.type.Color color = 200;
+  google.type.LatLng position = 102;
+}
