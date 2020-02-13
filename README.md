@@ -31,7 +31,7 @@ libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.9.0"
 
 **Step 2: add to `build.sbt`:**
 
-If you only want to generate Java:
+If you only want to generate Java code:
 
 ```scala
 PB.targets in Compile := Seq(
@@ -63,6 +63,8 @@ PB.targets in Compile := Seq(
 )
 ```
 
+## Download plugins that are available on maven repository
+
 To download an artifact and use it as a code generator plugin:
 
 ```scala
@@ -82,6 +84,23 @@ libraryDependencies += "io.grpc" % "protoc-gen-grpc-java" % "1.23.0" % "protobuf
 with the operating system replaced accordingly to the system you are running on. You can use the
 full syntax in case the code generator you are trying to download follows a
 different pattern.
+
+## To invoke a plugin that is already locally installed
+
+    PB.targets in Compile := Seq(
+      PB.gens.plugin(name="myplugin", path="/path/to/plugin") -> (sourceManaged in Compile).value / "js"
+    )
+
+If you need to pass parameters to the plugin, it can be done as follows:
+
+    val grpcWebGen = PB.gens.plugin(
+      name="grpc-web",
+      path="/usr/local/bin/protoc-gen-grpc-web-1.0.7-linux-x86_64"
+    )
+
+    PB.targets in Compile := Seq(
+      (grpcWebGen, Seq("mode=grpcwebtext")) -> (sourceManaged in Compile).value / "js"
+    )
 
 **Step 3: Put some protos in src/main/protobuf and compile**
 
