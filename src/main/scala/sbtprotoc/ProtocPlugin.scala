@@ -215,9 +215,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         log.info("Protoc target directory: %s".format(dir.absolutePath))
       }
 
-      targets.flatMap { ot =>
-        (ot.outputPath ** ("*.java" | "*.scala")).get
-      }.toSet
+      targets.flatMap { ot => (ot.outputPath ** ("*.java" | "*.scala")).get }.toSet
     } else if (schemas.nonEmpty && targets.isEmpty) {
       log.info("Protobufs files found, but PB.targets is empty.")
       Set[File]()
@@ -248,9 +246,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       cached(Set(dep)).toSeq
     }
 
-    deps.map { dep =>
-      dep -> cachedExtractDep(dep)
-    }
+    deps.map { dep => dep -> cachedExtractDep(dep) }
   }
 
   private[this] def isNativePlugin(dep: Attributed[File]): Boolean =
@@ -262,21 +258,19 @@ object ProtocPlugin extends AutoPlugin with Compat {
       val toExclude = (excludeFilter in key).value
       val schemas = (PB.protoSources in key).value
         .toSet[File]
-        .flatMap(
-          srcDir =>
-            (srcDir ** (toInclude -- toExclude)).get
-              .map(_.getAbsoluteFile)
+        .flatMap(srcDir =>
+          (srcDir ** (toInclude -- toExclude)).get
+            .map(_.getAbsoluteFile)
         )
       // Include Scala binary version like "_2.11" for cross building.
-      val cacheFile = (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
+      val cacheFile =
+        (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
 
       val nativePlugins =
         (managedClasspath in (ProtobufConfig, key)).value.filter(isNativePlugin _)
 
       // Ensure all plugins are executable
-      nativePlugins.foreach { dep =>
-        dep.data.setExecutable(true)
-      }
+      nativePlugins.foreach { dep => dep.data.setExecutable(true) }
 
       val nativePluginsArgs = nativePlugins.map { a =>
         val dep = a.get(artifact.key).get
@@ -298,9 +292,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         cacheFile,
         inStyle = FilesInfo.lastModified,
         outStyle = FilesInfo.exists
-      ) { (in: Set[File]) =>
-        compileProto()
-      }
+      ) { (in: Set[File]) => compileProto() }
 
       if (PB.recompile.value) {
         compileProto().toSeq
