@@ -7,5 +7,5 @@
 }
 
 libraryDependencies ++= Seq(
-  "com.thesamet.scalapb" %% "compilerplugin" % "0.7.0"
+  "com.thesamet.scalapb" %% "compilerplugin" % "0.9.6"
 )

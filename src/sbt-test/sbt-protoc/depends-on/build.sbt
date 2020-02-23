@@ -1,4 +1,4 @@
-val protobufVersion = "3.3.1"
+val protobufVersion = "3.11.4"
 
 lazy val root = (project in file("."))
   .dependsOn(a).settings(commonSettings: _*)
