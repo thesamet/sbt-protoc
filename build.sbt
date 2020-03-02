@@ -8,16 +8,15 @@ description := "SBT plugin for generating code from Protocol Buffer using protoc
 
 scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args")
 
-scalacOptions += {
-  if ((sbtVersion in pluginCrossBuild).value.startsWith("0.13")) "-target:jvm-1.7"
-  else "-target:jvm-1.8"
-}
+scalacOptions += "-target:jvm-1.8"
+
+scalaVersion := "2.12.10"
 
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
 
 libraryDependencies ++= Seq(
   "com.github.os72"      % "protoc-jar"     % "3.11.1",
-  "com.thesamet.scalapb" %% "protoc-bridge" % "0.7.14"
+  "com.thesamet.scalapb" %% "protoc-bridge" % "0.8.0"
 )
 
 enablePlugins(SbtPlugin)
@@ -48,5 +47,3 @@ releaseProcess := Seq[ReleaseStep](
   commitNextVersion,
   pushChanges
 )
-
-crossSbtVersions := Seq("0.13.18", "1.2.8")
