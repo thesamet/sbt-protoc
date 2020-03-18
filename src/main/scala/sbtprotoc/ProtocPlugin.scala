@@ -4,7 +4,7 @@ import sbt._
 import Keys._
 import java.io.File
 
-import protocbridge.Target
+import protocbridge.{DescriptorSetGenerator, Target}
 import sbt.plugins.JvmPlugin
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 
@@ -205,17 +205,23 @@ object ProtocPlugin extends AutoPlugin with Compat {
       log: Logger
   ) = {
     // Sort by the length of path names to ensure that delete parent directories before deleting child directories.
-    val generatedTargetDirs = targets.map(_.outputPath).sortBy(_.getAbsolutePath.length)
-    generatedTargetDirs.foreach { targetDir =>
-      if (deleteTargetDirectory) {
-        IO.delete(targetDir)
-      }
-      targetDir.mkdirs()
+    val sortedTargets     = targets.sortBy(_.outputPath.getAbsolutePath.length)
+    val sortedTargetPaths = sortedTargets.map(_.outputPath)
+
+    if (deleteTargetDirectory) {
+      sortedTargetPaths.foreach(IO.delete)
     }
+
+    sortedTargets
+      .map {
+        case Target(DescriptorSetGenerator(), outputFile, _) => outputFile.getParentFile
+        case Target(_, outputDirectory, _)                   => outputDirectory
+      }
+      .map(_.mkdirs)
 
     if (schemas.nonEmpty && targets.nonEmpty) {
       log.info(
-        "Compiling %d protobuf files to %s".format(schemas.size, generatedTargetDirs.mkString(","))
+        "Compiling %d protobuf files to %s".format(schemas.size, sortedTargetPaths.mkString(","))
       )
       log.debug("protoc options:")
       protocOptions.map("\t" + _).foreach(log.debug(_))
@@ -227,9 +233,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         sys.error("protoc returned exit code: %d" format exitCode)
 
       log.info("Compiling protobuf")
-      generatedTargetDirs.foreach { dir =>
-        log.info("Protoc target directory: %s".format(dir.absolutePath))
-      }
+      sortedTargetPaths.foreach { path => log.info("Protoc target: %s".format(path.absolutePath)) }
 
       targets.flatMap { ot => (ot.outputPath ** ("*.java" | "*.scala")).get }.toSet
     } else if (schemas.nonEmpty && targets.isEmpty) {

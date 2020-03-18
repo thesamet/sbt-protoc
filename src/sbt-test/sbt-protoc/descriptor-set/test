@@ -1,0 +1,7 @@
+> protocGenerate
+$ exists newdirectory/descriptorset.pb
+
+# make sure the cleanup before the call to protoc does not wipe anything else in the descriptorset directory
+$ touch newdirectory/dontdeleteme
+> protocGenerate
+$ exists newdirectory/dontdeleteme
