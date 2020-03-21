@@ -23,6 +23,10 @@ object ProtocPlugin extends AutoPlugin with Compat {
         "protoc-external-include-path",
         "The path to which protobuf:libraryDependencies are extracted and which is used as protobuf:includePath for protoc"
       )
+      val externalSourcePath = SettingKey[File](
+        "protoc-external-source-path",
+        "The path to which protobuf-src:libraryDependencies are extracted and which is used as additional sources for protoc"
+      )
       val dependentProjectsIncludePaths = SettingKey[Seq[File]](
         "protoc-dependent-projects-include-paths",
         "The paths to the protoc files of projects being depended on."
@@ -85,6 +89,8 @@ object ProtocPlugin extends AutoPlugin with Compat {
 
   val ProtobufConfig = config("protobuf")
 
+  val ProtobufSrcConfig = config("protobuf-src")
+
   override def trigger: PluginTrigger = allRequirements
 
   override def requires: Plugins = JvmPlugin
@@ -94,6 +100,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
   def protobufGlobalSettings: Seq[Def.Setting[_]] = Seq(
     includeFilter in PB.generate := "*.proto",
     PB.externalIncludePath := target.value / "protobuf_external",
+    PB.externalSourcePath := target.value / "protobuf_external_src",
     PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
     PB.additionalDependencies := {
       val libs = (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies)
@@ -112,11 +119,19 @@ object ProtocPlugin extends AutoPlugin with Compat {
     },
     libraryDependencies ++= PB.additionalDependencies.value,
     classpathTypes in ProtobufConfig += PB.ProtocPlugin,
-    managedClasspath in ProtobufConfig := {
-      val artifactTypes: Set[String] = (classpathTypes in ProtobufConfig).value
-      Classpaths.managedJars(ProtobufConfig, artifactTypes, (update in ProtobufConfig).value)
-    },
-    ivyConfigurations += ProtobufConfig,
+    managedClasspath in ProtobufConfig :=
+      Classpaths.managedJars(
+        ProtobufConfig,
+        (classpathTypes in ProtobufConfig).value,
+        (update in ProtobufConfig).value
+      ),
+    managedClasspath in ProtobufSrcConfig :=
+      Classpaths.managedJars(
+        ProtobufSrcConfig,
+        (classpathTypes in ProtobufSrcConfig).value,
+        (update in ProtobufSrcConfig).value
+      ),
+    ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
     PB.protocVersion := "-v3.11.4",
     PB.pythonExe := "python",
     PB.deleteTargetDirectory := true
@@ -137,6 +152,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.protocOptions := Nil,
     PB.protoSources := Nil,
     PB.protoSources += sourceDirectory.value / "protobuf",
+    PB.protoSources += PB.externalSourcePath.value,
     PB.includePaths := PB.protoSources.value,
     PB.includePaths += PB.externalIncludePath.value,
     PB.dependentProjectsIncludePaths := protocIncludeDependencies.value,
@@ -151,7 +167,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
   override def projectSettings: Seq[Def.Setting[_]] =
     protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings)
 
-  case class UnpackedDependencies(dir: File, mappedFiles: Map[File, Seq[File]]) {
+  case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
   }
 
@@ -307,7 +323,12 @@ object ProtocPlugin extends AutoPlugin with Compat {
       (PB.externalIncludePath in key).value,
       (streams in key).value
     )
-    UnpackedDependencies((PB.externalIncludePath in key).value, extractedFiles.toMap)
+    val extractedSrcFiles = unpack(
+      (managedClasspath in (ProtobufSrcConfig, key)).value.map(_.data),
+      (PB.externalSourcePath in key).value,
+      (streams in key).value
+    )
+    UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
   }
 
   /**

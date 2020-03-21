@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package multi;
+
+message msg3 {
+  int32 thing = 1;
+}
