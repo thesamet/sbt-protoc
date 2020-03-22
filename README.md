@@ -120,6 +120,15 @@ libraryDependencies ++= Seq(
   "com.google.protobuf" % "protobuf-java" % "3.7.0" % "protobuf"
 )
 
+// Compile protos from some Jar (and make them available to import). Without
+// the intrasitive() directory, `protobuf-src` would also unpack and compile
+// all transitive dependencies of the package. This could lead to having
+// duplicate class files, if another library is already providing compiled
+// classes for your dependencies.
+libraryDependencies ++= Seq(
+  "com.google.api.grpc" % "proto-google-common-protos" % "1.17.0" % "protobuf-src" intransitive()
+)
+
 // Changing where to look for protos to compile (default src/main/protobuf):
 PB.protoSources in Compile := Seq(sourceDirectory.value / "somewhere")
 
