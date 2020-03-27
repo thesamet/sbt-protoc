@@ -217,7 +217,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         case Target(DescriptorSetGenerator(), outputFile, _) => outputFile.getParentFile
         case Target(_, outputDirectory, _)                   => outputDirectory
       }
-      .map(_.mkdirs)
+      .foreach(_.mkdirs)
 
     if (schemas.nonEmpty && targets.nonEmpty) {
       log.info(
