@@ -157,7 +157,18 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.includePaths += PB.externalIncludePath.value,
     PB.dependentProjectsIncludePaths := protocIncludeDependencies.value,
     PB.targets := Nil,
-    PB.generate := sourceGeneratorTask(PB.generate).dependsOn(PB.unpackDependencies).value,
+    PB.generate := sourceGeneratorTask(PB.generate)
+      .dependsOn(
+        // We need to unpack dependencies for all subprojects since current project is allowed to import
+        // them.
+        PB.unpackDependencies.?.all(
+          ScopeFilter(
+            inDependencies(ThisProject, transitive = false),
+            inConfigurations(Compile)
+          )
+        )
+      )
+      .value,
     PB.runProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
     },
@@ -335,30 +346,12 @@ object ProtocPlugin extends AutoPlugin with Compat {
     UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
   }
 
-  /**
-    * Gets a Seq[File] representing the proto sources of all the projects that the current project depends on.
-    */
-  def protocIncludeDependencies: Def.Initialize[Seq[File]] = Def.settingDyn {
-    val deps = buildDependencies.value.classpath
-
-    def getAllProjectDeps(ref: ProjectRef)(visited: Set[ProjectRef] = Set(ref)): Set[ProjectRef] =
-      deps
-        .getOrElse(ref, Seq.empty)
-        .map(_.project)
-        .toSet
-        .diff(visited)
-        .flatMap(getAllProjectDeps(_)(visited + ref)) + ref
-
-    val thisProjectDeps = getAllProjectDeps(thisProjectRef.value)()
-
-    thisProjectDeps
-      .map(ref => (PB.protoSources in (ref, Compile), PB.includePaths in (ref, Compile)))
-      .foldLeft(Def.setting(Seq.empty[File])) {
-        case (acc, (srcs, includes)) =>
-          Def.settingDyn {
-            val values = acc.value ++ srcs.?.value.getOrElse(Nil) ++ includes.?.value.getOrElse(Nil)
-            Def.setting(values.distinct)
-          }
-      }
+  def protocIncludeDependencies: Def.Initialize[Seq[File]] = Def.setting {
+    def filter =
+      ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
+    (
+      PB.protoSources.?.all(filter).value.map(_.getOrElse(Nil)).flatten ++
+        PB.includePaths.?.all(filter).value.map(_.getOrElse(Nil)).flatten
+    ).distinct
   }
 }
