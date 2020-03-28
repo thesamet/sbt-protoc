@@ -1,5 +1,0 @@
-> protocGenerate
-> existsSource main/test/Test.java
-$ delete src/main/protobuf/test.proto
-> protocGenerate
--> existsSource main/test/Test.java

@@ -1,0 +1,14 @@
+> compile
+
+$ exists target/scala-2.12/src_managed/main/multi/File1.java
+$ exists target/scala-2.12/classes/multi/File1.class
+
+$ exists sub-a/target/scala-2.12/src_managed/main/sub/a/A.java
+$ exists sub-a/target/scala-2.12/classes/sub/a/A.class
+
+$ exists sub-b/target/scala-2.12/src_managed/main/sub/b/B.java
+$ exists sub-b/target/scala-2.12/classes/sub/b/B.class
+
+> clean
+
+$ absent target/scala-2.12/src_managed/main/multi/File1.java

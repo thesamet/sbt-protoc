@@ -1,0 +1,6 @@
+> show protocSources
+> clean
+> compile
+
+$ exists target/scala-2.12/classes/com/google/api/MetricRule.class
+$ absent target/scala-2.12/classes/com/google/protobuf/MessageOptions.class

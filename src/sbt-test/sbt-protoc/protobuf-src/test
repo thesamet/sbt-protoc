@@ -1,6 +1,0 @@
-> show protocSources
-> clean
-> compile
-
-> existsClass com/google/api/MetricRule.class
--> existsClass com/google/protobuf/MessageOptions.class
