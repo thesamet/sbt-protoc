@@ -348,7 +348,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
 
   def protocIncludeDependencies: Def.Initialize[Seq[File]] = Def.setting {
     def filter =
-      ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
+      ScopeFilter(inDependencies(ThisProject), inConfigurations(Compile))
     (
       PB.protoSources.?.all(filter).value.map(_.getOrElse(Nil)).flatten ++
         PB.includePaths.?.all(filter).value.map(_.getOrElse(Nil)).flatten
