@@ -168,7 +168,12 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.runProtoc := { args =>
       com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
     },
-    sourceGenerators += PB.generate.taskValue
+    sourceGenerators += PB.generate
+      .map(_.filter { file =>
+        val name = file.getName
+        name.endsWith(".java") || name.endsWith(".scala")
+      })
+      .taskValue
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
@@ -244,7 +249,10 @@ object ProtocPlugin extends AutoPlugin with Compat {
       log.info("Compiling protobuf")
       sortedTargetPaths.foreach { path => log.info("Protoc target: %s".format(path.absolutePath)) }
 
-      targets.flatMap { ot => (ot.outputPath ** ("*.java" | "*.scala")).get }.toSet
+      targets.flatMap {
+        case Target(DescriptorSetGenerator(), outputFile, _) => Seq(outputFile)
+        case Target(_, outputDirectory, _)                   => outputDirectory.allPaths.get
+      }.toSet
     } else if (schemas.nonEmpty && targets.isEmpty) {
       log.info("Protobufs files found, but PB.targets is empty.")
       Set[File]()

@@ -1,0 +1,9 @@
+> package
+$ exists target/scala-2.12/classes/newdirectory/descriptorset.pb
+$ exists target/scala-2.12/classes/js/test1.js
+$ exists target/scala-2.12/classes/test/Test1.class
+
+# make sure the cleanup before the call to protoc does not wipe anything else in the descriptorset directory
+$ touch target/scala-2.12/resource_managed/main/newdirectory/dontdeleteme
+> protocGenerate
+$ exists target/scala-2.12/resource_managed/main/newdirectory/dontdeleteme
