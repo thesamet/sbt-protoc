@@ -1,4 +1,4 @@
-Project.inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
+// Project.inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
 
 val protobufVersion = "3.11.4"
 

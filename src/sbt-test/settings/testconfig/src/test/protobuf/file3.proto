@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package multi;
 
+import "file1.proto";  // importing from compile config
+
 message msg3 {
   int32 thing = 1;
+  msg1 reference = 2;
 }

@@ -27,10 +27,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
         "protoc-external-source-path",
         "The path to which protobuf-src:libraryDependencies are extracted and which is used as additional sources for protoc"
       )
-      val dependentProjectsIncludePaths = SettingKey[Seq[File]](
-        "protoc-dependent-projects-include-paths",
-        "The paths to the protoc files of projects being depended on."
-      )
       val generate = TaskKey[Seq[File]]("protoc-generate", "Compile the protobuf sources.")
       val unpackDependencies =
         TaskKey[UnpackedDependencies]("protoc-unpack-dependencies", "Unpack dependencies.")
@@ -155,7 +151,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.protoSources += PB.externalSourcePath.value,
     PB.includePaths := PB.protoSources.value,
     PB.includePaths += PB.externalIncludePath.value,
-    PB.dependentProjectsIncludePaths := protocIncludeDependencies.value,
+    PB.includePaths ++= protocIncludeDependencies.value,
     PB.targets := Nil,
     PB.generate := sourceGeneratorTask(PB.generate)
       .dependsOn(
@@ -176,7 +172,9 @@ object ProtocPlugin extends AutoPlugin with Compat {
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
-    protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings)
+    protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings) ++ inConfig(Test)(
+      protobufConfigSettings :+ (PB.includePaths ++= (PB.includePaths in Compile).value)
+    )
 
   case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
@@ -312,7 +310,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
         compile(
           (PB.runProtoc in key).value,
           schemas,
-          (PB.includePaths in key).value ++ PB.dependentProjectsIncludePaths.value,
+          (PB.includePaths in key).value,
           (PB.protocOptions in key).value ++ nativePluginsArgs,
           (PB.targets in key).value,
           (PB.deleteTargetDirectory in key).value,

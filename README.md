@@ -161,13 +161,6 @@ PB.runProtoc in Compile := (args => Process("/path/to/protoc", args)!)
 PB.additionalDependencies := Nil
 ```
 
-The following setting is needed, if you want to generate .proto definitions
-in the `Test` scope.
-
-```scala
-inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
-```
-
 Debugging
 ---------
 
