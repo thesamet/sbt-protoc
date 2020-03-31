@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.99.31]
+
 ### Changed
 - In earlier versions, if you wanted to generate `.proto` files for the `Test` configuration (for protos under src/test/protobuf)
 you had to include a line like `inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings)`.
