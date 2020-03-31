@@ -149,9 +149,12 @@ object ProtocPlugin extends AutoPlugin with Compat {
     PB.protoSources := Nil,
     PB.protoSources += sourceDirectory.value / "protobuf",
     PB.protoSources += PB.externalSourcePath.value,
-    PB.includePaths := PB.protoSources.value,
-    PB.includePaths += PB.externalIncludePath.value,
-    PB.includePaths ++= protocIncludeDependencies.value,
+    PB.includePaths := (
+      PB.includePaths.?.value.getOrElse(Nil) ++
+        PB.protoSources.value ++
+        protocIncludeDependencies.value :+
+        PB.externalIncludePath.value,
+    ).distinct,
     PB.targets := Nil,
     PB.generate := sourceGeneratorTask(PB.generate)
       .dependsOn(
@@ -177,9 +180,8 @@ object ProtocPlugin extends AutoPlugin with Compat {
   )
 
   override def projectSettings: Seq[Def.Setting[_]] =
-    protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings) ++ inConfig(Test)(
-      protobufConfigSettings :+ (PB.includePaths ++= (PB.includePaths in Compile).value)
-    )
+    protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings) ++
+      inConfig(Test)(protobufConfigSettings)
 
   case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq

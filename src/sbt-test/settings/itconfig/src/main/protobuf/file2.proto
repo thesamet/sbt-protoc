@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package multi;
+
+// https://github.com/google/protobuf/blob/v3.0.0/src/google/protobuf/timestamp.proto
+
+import "google/protobuf/timestamp.proto";
+
+message msg {
+  google.protobuf.Timestamp time = 1;
+}

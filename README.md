@@ -161,6 +161,34 @@ PB.runProtoc in Compile := (args => Process("/path/to/protoc", args)!)
 PB.additionalDependencies := Nil
 ```
 
+Protos in other configs
+-----------------------
+
+This plugin supports generating protos in the `Test` config. That means, that
+you can put protos under `src/test/protobuf` and have it generated and compiled under the
+`Test` configuration, so the generated code is only available to your tests,
+but not to your main code.
+
+To do that, add:
+
+    PB.targets in Test := Seq(
+        PB.gens.java("3.11.4") -> (sourceManaged in Test).value
+    )
+
+If you want to have protos in some other configuration (not `Compile` or
+`Test`), for example `IntegrationTest` you need to manually add the plugin
+default settings in that configuration:
+
+```scala
+configs(IntegrationTest)
+
+inConfig(IntegrationTest)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
+
+PB.targets in IntegrationTest := Seq(
+    PB.gens.java("3.11.4") -> (sourceManaged in IntegrationTest).value
+)
+```
+
 Debugging
 ---------
 
