@@ -341,6 +341,10 @@ object ProtocPlugin extends AutoPlugin with Compat {
     }
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) = Def.task {
+    // unpack() creates those dirs when there are jars to unpack, but not when there is
+    // nothing to unpack. This leads to a protoc warning. See #152
+    Seq(PB.externalSourcePath.value, PB.externalIncludePath.value).foreach(_.mkdirs)
+
     val extractedFiles = unpack(
       (managedClasspath in (ProtobufConfig, key)).value.map(_.data),
       (PB.externalIncludePath in key).value,
