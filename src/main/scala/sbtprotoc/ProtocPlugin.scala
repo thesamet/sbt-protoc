@@ -220,24 +220,23 @@ object ProtocPlugin extends AutoPlugin with Compat {
       deleteTargetDirectory: Boolean,
       log: Logger
   ) = {
-    // Sort by the length of path names to ensure that delete parent directories before deleting child directories.
-    val sortedTargets     = targets.sortBy(_.outputPath.getAbsolutePath.length)
-    val sortedTargetPaths = sortedTargets.map(_.outputPath)
+    val targetPaths = targets.map(_.outputPath).toSet
 
     if (deleteTargetDirectory) {
-      sortedTargetPaths.foreach(IO.delete)
+      targetPaths.foreach(IO.delete)
     }
 
-    sortedTargets
+    targets
       .map {
         case Target(DescriptorSetGenerator(), outputFile, _) => outputFile.getParentFile
         case Target(_, outputDirectory, _)                   => outputDirectory
       }
+      .toSet[File]
       .foreach(_.mkdirs)
 
     if (schemas.nonEmpty && targets.nonEmpty) {
       log.info(
-        "Compiling %d protobuf files to %s".format(schemas.size, sortedTargetPaths.mkString(","))
+        "Compiling %d protobuf files to %s".format(schemas.size, targetPaths.mkString(","))
       )
       log.debug("protoc options:")
       protocOptions.map("\t" + _).foreach(log.debug(_))
@@ -247,9 +246,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
         executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, log)
       if (exitCode != 0)
         sys.error("protoc returned exit code: %d" format exitCode)
-
-      log.info("Compiling protobuf")
-      sortedTargetPaths.foreach { path => log.info("Protoc target: %s".format(path.absolutePath)) }
 
       targets.flatMap {
         case Target(DescriptorSetGenerator(), outputFile, _) => Seq(outputFile)
