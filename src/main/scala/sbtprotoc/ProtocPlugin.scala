@@ -93,91 +93,93 @@ object ProtocPlugin extends AutoPlugin with Compat {
 
   override def projectConfigurations: Seq[Configuration] = Seq(ProtobufConfig)
 
-  def protobufGlobalSettings: Seq[Def.Setting[_]] = Seq(
-    includeFilter in PB.generate := "*.proto",
-    PB.externalIncludePath := target.value / "protobuf_external",
-    PB.externalSourcePath := target.value / "protobuf_external_src",
-    PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
-    PB.additionalDependencies := {
-      val libs = (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies)
-      platformDepsCrossVersion.?.value match {
-        case Some(c) =>
-          libs.map { lib =>
-            val a = makeArtifact(lib)
-            if (lib.crossVersion)
-              a cross c
-            else
-              a
-          }
-        case None =>
-          libs.map(makeArtifact)
-      }
-    },
-    libraryDependencies ++= PB.additionalDependencies.value,
-    classpathTypes in ProtobufConfig += PB.ProtocPlugin,
-    managedClasspath in ProtobufConfig :=
-      Classpaths.managedJars(
-        ProtobufConfig,
-        (classpathTypes in ProtobufConfig).value,
-        (update in ProtobufConfig).value
-      ),
-    managedClasspath in ProtobufSrcConfig :=
-      Classpaths.managedJars(
-        ProtobufSrcConfig,
-        (classpathTypes in ProtobufSrcConfig).value,
-        (update in ProtobufSrcConfig).value
-      ),
-    ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
-    PB.protocVersion := "-v3.11.4",
-    PB.pythonExe := "python",
-    PB.deleteTargetDirectory := true
-  )
+  def protobufGlobalSettings: Seq[Def.Setting[_]] =
+    Seq(
+      includeFilter in PB.generate := "*.proto",
+      PB.externalIncludePath := target.value / "protobuf_external",
+      PB.externalSourcePath := target.value / "protobuf_external_src",
+      PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
+      PB.additionalDependencies := {
+        val libs = (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies)
+        platformDepsCrossVersion.?.value match {
+          case Some(c) =>
+            libs.map { lib =>
+              val a = makeArtifact(lib)
+              if (lib.crossVersion)
+                a cross c
+              else
+                a
+            }
+          case None =>
+            libs.map(makeArtifact)
+        }
+      },
+      libraryDependencies ++= PB.additionalDependencies.value,
+      classpathTypes in ProtobufConfig += PB.ProtocPlugin,
+      managedClasspath in ProtobufConfig :=
+        Classpaths.managedJars(
+          ProtobufConfig,
+          (classpathTypes in ProtobufConfig).value,
+          (update in ProtobufConfig).value
+        ),
+      managedClasspath in ProtobufSrcConfig :=
+        Classpaths.managedJars(
+          ProtobufSrcConfig,
+          (classpathTypes in ProtobufSrcConfig).value,
+          (update in ProtobufSrcConfig).value
+        ),
+      ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
+      PB.protocVersion := "-v3.11.4",
+      PB.pythonExe := "python",
+      PB.deleteTargetDirectory := true
+    )
 
   // Settings that are applied at configuration (Compile, Test) scope.
-  def protobufConfigSettings: Seq[Setting[_]] = Seq(
-    arguments := Arguments(
-      includePaths = PB.includePaths.value,
-      protocOptions = PB.protocOptions.value,
-      deleteTargetDirectory = PB.deleteTargetDirectory.value,
-      targets = PB.targets.value.map(target => (target.outputPath, target.options))
-    ),
-    PB.recompile := {
-      import CacheArguments.instance
-      arguments.previous.exists(_ != arguments.value)
-    },
-    PB.protocOptions := Nil,
-    PB.protoSources := Nil,
-    PB.protoSources += sourceDirectory.value / "protobuf",
-    PB.protoSources += PB.externalSourcePath.value,
-    PB.includePaths := (
-      PB.includePaths.?.value.getOrElse(Nil) ++
-        PB.protoSources.value ++
-        protocIncludeDependencies.value :+
-        PB.externalIncludePath.value,
-    ).distinct,
-    PB.targets := Nil,
-    PB.generate := sourceGeneratorTask(PB.generate)
-      .dependsOn(
-        // We need to unpack dependencies for all subprojects since current project is allowed to import
-        // them.
-        PB.unpackDependencies.?.all(
-          ScopeFilter(
-            inDependencies(ThisProject, transitive = false),
-            inConfigurations(Compile)
+  def protobufConfigSettings: Seq[Setting[_]] =
+    Seq(
+      arguments := Arguments(
+        includePaths = PB.includePaths.value,
+        protocOptions = PB.protocOptions.value,
+        deleteTargetDirectory = PB.deleteTargetDirectory.value,
+        targets = PB.targets.value.map(target => (target.outputPath, target.options))
+      ),
+      PB.recompile := {
+        import CacheArguments.instance
+        arguments.previous.exists(_ != arguments.value)
+      },
+      PB.protocOptions := Nil,
+      PB.protoSources := Nil,
+      PB.protoSources += sourceDirectory.value / "protobuf",
+      PB.protoSources += PB.externalSourcePath.value,
+      PB.includePaths := (
+        PB.includePaths.?.value.getOrElse(Nil) ++
+          PB.protoSources.value ++
+          protocIncludeDependencies.value :+
+          PB.externalIncludePath.value,
+      ).distinct,
+      PB.targets := Nil,
+      PB.generate := sourceGeneratorTask(PB.generate)
+        .dependsOn(
+          // We need to unpack dependencies for all subprojects since current project is allowed to import
+          // them.
+          PB.unpackDependencies.?.all(
+            ScopeFilter(
+              inDependencies(ThisProject, transitive = false),
+              inConfigurations(Compile)
+            )
           )
         )
-      )
-      .value,
-    PB.runProtoc := { args =>
-      com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
-    },
-    sourceGenerators += PB.generate
-      .map(_.filter { file =>
-        val name = file.getName
-        name.endsWith(".java") || name.endsWith(".scala")
-      })
-      .taskValue
-  )
+        .value,
+      PB.runProtoc := { args =>
+        com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
+      },
+      sourceGenerators += PB.generate
+        .map(_.filter { file =>
+          val name = file.getName
+          name.endsWith(".java") || name.endsWith(".scala")
+        })
+        .taskValue
+    )
 
   override def projectSettings: Seq[Def.Setting[_]] =
     protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings) ++
@@ -336,30 +338,32 @@ object ProtocPlugin extends AutoPlugin with Compat {
       }
     }
 
-  private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) = Def.task {
-    // unpack() creates those dirs when there are jars to unpack, but not when there is
-    // nothing to unpack. This leads to a protoc warning. See #152
-    Seq(PB.externalSourcePath.value, PB.externalIncludePath.value).foreach(_.mkdirs)
+  private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
+    Def.task {
+      // unpack() creates those dirs when there are jars to unpack, but not when there is
+      // nothing to unpack. This leads to a protoc warning. See #152
+      Seq(PB.externalSourcePath.value, PB.externalIncludePath.value).foreach(_.mkdirs)
 
-    val extractedFiles = unpack(
-      (managedClasspath in (ProtobufConfig, key)).value.map(_.data),
-      (PB.externalIncludePath in key).value,
-      (streams in key).value
-    )
-    val extractedSrcFiles = unpack(
-      (managedClasspath in (ProtobufSrcConfig, key)).value.map(_.data),
-      (PB.externalSourcePath in key).value,
-      (streams in key).value
-    )
-    UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
-  }
+      val extractedFiles = unpack(
+        (managedClasspath in (ProtobufConfig, key)).value.map(_.data),
+        (PB.externalIncludePath in key).value,
+        (streams in key).value
+      )
+      val extractedSrcFiles = unpack(
+        (managedClasspath in (ProtobufSrcConfig, key)).value.map(_.data),
+        (PB.externalSourcePath in key).value,
+        (streams in key).value
+      )
+      UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
+    }
 
-  def protocIncludeDependencies: Def.Initialize[Seq[File]] = Def.setting {
-    def filter =
-      ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
-    (
-      PB.protoSources.?.all(filter).value.map(_.getOrElse(Nil)).flatten ++
-        PB.includePaths.?.all(filter).value.map(_.getOrElse(Nil)).flatten
-    ).distinct
-  }
+  def protocIncludeDependencies: Def.Initialize[Seq[File]] =
+    Def.setting {
+      def filter =
+        ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
+      (
+        PB.protoSources.?.all(filter).value.map(_.getOrElse(Nil)).flatten ++
+          PB.includePaths.?.all(filter).value.map(_.getOrElse(Nil)).flatten
+      ).distinct
+    }
 }
