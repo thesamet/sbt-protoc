@@ -78,7 +78,7 @@ object ProtocPlugin extends AutoPlugin with Compat {
       includePaths: Seq[File],
       protocOptions: Seq[String],
       deleteTargetDirectory: Boolean,
-      targets: Seq[(File, Seq[String])]
+      targets: Seq[(String, Seq[protocbridge.Artifact], File, Seq[String])]
   )
 
   import autoImport.PB
@@ -141,7 +141,14 @@ object ProtocPlugin extends AutoPlugin with Compat {
         includePaths = PB.includePaths.value,
         protocOptions = PB.protocOptions.value,
         deleteTargetDirectory = PB.deleteTargetDirectory.value,
-        targets = PB.targets.value.map(target => (target.outputPath, target.options))
+        targets = PB.targets.value.map { target =>
+          (
+            target.generator.name,
+            target.generator.suggestedDependencies,
+            target.outputPath,
+            target.options
+          )
+        }
       ),
       PB.recompile := {
         import CacheArguments.instance

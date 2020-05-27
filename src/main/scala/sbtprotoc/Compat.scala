@@ -12,7 +12,10 @@ private[sbtprotoc] trait Compat extends CacheImplicits { self: ProtocPlugin.type
   }
 
   protected object CacheArguments {
-    implicit val instance: JsonFormat[Arguments] =
+    implicit val artifactFormat: JsonFormat[protocbridge.Artifact] =
+      caseClassArray(protocbridge.Artifact.apply _, protocbridge.Artifact.unapply _)
+
+    implicit val argumentsFormat: JsonFormat[Arguments] =
       caseClassArray(Arguments.apply _, Arguments.unapply _)
   }
 }
