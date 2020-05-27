@@ -1,14 +1,20 @@
 package sbtprotoc
 
-import sbt._
+// avoid ambiguous import when sjsonnew.CollectionFormats.seqFormat is brought in scope by ignoring sbt 1.3 implicit
+// https://github.com/sbt/sbt/commit/33194233698ab49682d89091a332edb808cb75bc#diff-cafb18f4282f4fff753f9efb35169d46R39
+import sbt.{fileJsonFormatter => _, _}
 import Keys._
 import java.io.File
 
 import protocbridge.{DescriptorSetGenerator, Target}
+import sbt.librarymanagement.{CrossVersion, ModuleID}
 import sbt.plugins.JvmPlugin
+import sbt.util.CacheImplicits
+import sjsonnew.JsonFormat
+
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 
-object ProtocPlugin extends AutoPlugin with Compat {
+object ProtocPlugin extends AutoPlugin {
   object autoImport {
     object PB {
       val includePaths = SettingKey[Seq[File]](
@@ -81,6 +87,14 @@ object ProtocPlugin extends AutoPlugin with Compat {
       targets: Seq[(String, Seq[protocbridge.Artifact], File, Seq[String])]
   )
 
+  private[sbtprotoc] object Arguments extends CacheImplicits {
+    implicit val artifactFormat: JsonFormat[protocbridge.Artifact] =
+      caseClassArray(protocbridge.Artifact.apply _, protocbridge.Artifact.unapply _)
+
+    implicit val argumentsFormat: JsonFormat[Arguments] =
+      caseClassArray(Arguments.apply _, Arguments.unapply _)
+  }
+
   import autoImport.PB
 
   val ProtobufConfig = config("protobuf")
@@ -151,7 +165,6 @@ object ProtocPlugin extends AutoPlugin with Compat {
         }
       ),
       PB.recompile := {
-        import CacheArguments.instance
         arguments.previous.exists(_ != arguments.value)
       },
       PB.protocOptions := Nil,
@@ -373,4 +386,10 @@ object ProtocPlugin extends AutoPlugin with Compat {
           PB.includePaths.?.all(filter).value.map(_.getOrElse(Nil)).flatten
       ).distinct
     }
+
+  private[this] def makeArtifact(f: protocbridge.Artifact): ModuleID = {
+    ModuleID(f.groupId, f.artifactId, f.version)
+      .cross(if (f.crossVersion) CrossVersion.binary else Disabled)
+  }
+
 }
