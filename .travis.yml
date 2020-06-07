@@ -12,6 +12,7 @@ sudo: false
 before_install:
 - ./travis_setup.sh
 script:
+   - set -e
    - sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
    - cd examples
    - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
