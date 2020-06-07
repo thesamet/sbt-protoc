@@ -13,6 +13,11 @@ import sbt.util.CacheImplicits
 import sjsonnew.JsonFormat
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
+import protocbridge.SandboxedJvmGenerator
+import sbt.librarymanagement.ivy.IvyDependencyResolution
+import sbt.librarymanagement.ivy.IvyConfiguration
+import java.net.URLClassLoader
+import scala.collection.mutable
 
 object ProtocPlugin extends AutoPlugin {
   object autoImport {
@@ -215,7 +220,7 @@ object ProtocPlugin extends AutoPlugin {
       includePaths: Seq[File],
       protocOptions: Seq[String],
       targets: Seq[Target],
-      log: Logger
+      sandboxedLoader: SandboxedJvmGenerator => ClassLoader
   ): Int =
     try {
       val incPath = includePaths.map("-I" + _.getAbsolutePath)
@@ -223,7 +228,8 @@ object ProtocPlugin extends AutoPlugin {
         protocCommand,
         targets,
         incPath ++ protocOptions ++ schemas.map(_.getAbsolutePath),
-        pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance
+        pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance,
+        classLoader = sandboxedLoader
       )
     } catch {
       case e: Exception =>
@@ -233,6 +239,19 @@ object ProtocPlugin extends AutoPlugin {
         )
     }
 
+  private[this] val classLoaderMap = new mutable.HashMap[SandboxedJvmGenerator, ClassLoader]
+
+  private[this] def sandboxedLoader(ivyConfig: IvyConfiguration, log: Logger)(gen: SandboxedJvmGenerator): ClassLoader = classLoaderMap.synchronized {
+    if (classLoaderMap.contains(gen)) classLoaderMap(gen)
+    else {
+      val lm = IvyDependencyResolution(ivyConfig)
+      val files = lm.retrieve(lm.wrapDependencyInModule(makeArtifact(gen.artifact)), new File(".protoc-jars"), log).right.get
+      val cloader = new URLClassLoader(files.map(_.toURI().toURL()).toArray, null)
+      classLoaderMap.put(gen, cloader)
+      cloader
+    }
+  }
+
   private[this] def compile(
       protocCommand: Seq[String] => Int,
       schemas: Set[File],
@@ -240,7 +259,8 @@ object ProtocPlugin extends AutoPlugin {
       protocOptions: Seq[String],
       targets: Seq[Target],
       deleteTargetDirectory: Boolean,
-      log: Logger
+      log: Logger,
+      sandboxedLoader: SandboxedJvmGenerator => ClassLoader
   ) = {
     val targetPaths = targets.map(_.outputPath).toSet
 
@@ -265,7 +285,7 @@ object ProtocPlugin extends AutoPlugin {
       schemas.foreach(schema => log.info("Compiling schema %s" format schema))
 
       val exitCode =
-        executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, log)
+        executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, sandboxedLoader)
       if (exitCode != 0)
         sys.error("protoc returned exit code: %d" format exitCode)
 
@@ -342,7 +362,11 @@ object ProtocPlugin extends AutoPlugin {
           (PB.protocOptions in key).value ++ nativePluginsArgs,
           (PB.targets in key).value,
           (PB.deleteTargetDirectory in key).value,
-          (streams in key).value.log
+          (streams in key).value.log,
+          sandboxedLoader(
+            (ivyConfiguration in key).value,
+            (streams in key).value.log,
+          )
         )
 
       val cachedCompile = FileFunction.cached(
