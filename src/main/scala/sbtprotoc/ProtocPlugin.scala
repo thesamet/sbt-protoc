@@ -241,16 +241,28 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] val classLoaderMap = new mutable.HashMap[SandboxedJvmGenerator, ClassLoader]
 
-  private[this] def sandboxedLoader(ivyConfig: IvyConfiguration, log: Logger)(gen: SandboxedJvmGenerator): ClassLoader = classLoaderMap.synchronized {
-    if (classLoaderMap.contains(gen)) classLoaderMap(gen)
-    else {
-      val lm = IvyDependencyResolution(ivyConfig)
-      val files = lm.retrieve(lm.wrapDependencyInModule(makeArtifact(gen.artifact)), new File(".protoc-jars"), log).right.get
-      val cloader = new URLClassLoader(files.map(_.toURI().toURL()).toArray, null)
-      classLoaderMap.put(gen, cloader)
-      cloader
+  private[this] def sandboxedLoader(ivyConfig: IvyConfiguration, log: Logger)(
+      gen: SandboxedJvmGenerator
+  ): ClassLoader =
+    classLoaderMap.synchronized {
+      if (classLoaderMap.contains(gen)) classLoaderMap(gen)
+      else {
+        val lm = IvyDependencyResolution(ivyConfig)
+        val files = lm
+          .retrieve(
+            lm.wrapDependencyInModule(makeArtifact(gen.artifact)),
+            IO.createTemporaryDirectory,
+            log
+          )
+          .fold(
+            e => throw new RuntimeException(s"Failed to resolve artifacts for ${gen.name}: ${e}"),
+            identity
+          )
+        val cloader = new URLClassLoader(files.map(_.toURI().toURL()).toArray, null)
+        classLoaderMap.put(gen, cloader)
+        cloader
+      }
     }
-  }
 
   private[this] def compile(
       protocCommand: Seq[String] => Int,
@@ -365,7 +377,7 @@ object ProtocPlugin extends AutoPlugin {
           (streams in key).value.log,
           sandboxedLoader(
             (ivyConfiguration in key).value,
-            (streams in key).value.log,
+            (streams in key).value.log
           )
         )
 
