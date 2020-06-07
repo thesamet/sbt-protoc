@@ -16,3 +16,9 @@ script:
    - sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
    - cd examples
    - for d in */ ; do cd "$d" &&  sbt test && cd ../ ; done
+
+cache:
+  directories:
+  - $HOME/.cache/coursier
+  - $HOME/.ivy2/cache
+  - $HOME/.sbt
