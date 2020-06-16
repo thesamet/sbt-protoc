@@ -1,0 +1,34 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    steps:
+    - uses: actions/checkout@v1
+    - uses: olafurpg/setup-scala@v5
+      with:
+        java-version: 12
+    - name: Mount caches
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.sbt
+          ~/.ivy2/cache
+          ~/.cache/coursier
+        key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+    - name: Compile and test
+      run: |
+       sbt -Dfile.encoding=UTF-8 ^test "^scripted settings/protobuf-src"
+       cd examples
+       for d in */ ; do cd "$d" && sbt test && cd ../ ; done
+      shell: bash
+    - name: Format check
+      if: ${{runner.os}} == "Linux"
+      run: |
+        sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
