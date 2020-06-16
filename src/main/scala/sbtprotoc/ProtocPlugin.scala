@@ -14,10 +14,12 @@ import sjsonnew.JsonFormat
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 import protocbridge.SandboxedJvmGenerator
-import sbt.librarymanagement.ivy.IvyDependencyResolution
-import sbt.librarymanagement.ivy.IvyConfiguration
 import java.net.URLClassLoader
 import scala.collection.mutable
+import sbt.librarymanagement.DependencyResolution
+import sbt.librarymanagement.UnresolvedWarningConfiguration
+import sbt.librarymanagement.UpdateConfiguration
+import sbt.librarymanagement.ivy.IvyDependencyResolution
 
 object ProtocPlugin extends AutoPlugin {
   object autoImport {
@@ -241,24 +243,32 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] val classLoaderMap = new mutable.HashMap[SandboxedJvmGenerator, ClassLoader]
 
-  private[this] def sandboxedLoader(ivyConfig: IvyConfiguration, log: Logger)(
+  private[this] def sandboxedLoader(lm: DependencyResolution, log: Logger)(
       gen: SandboxedJvmGenerator
   ): ClassLoader =
     classLoaderMap.synchronized {
       if (classLoaderMap.contains(gen)) classLoaderMap(gen)
       else {
-        val lm = IvyDependencyResolution(ivyConfig)
-        val files = lm
-          .retrieve(
+        val updateReport = lm
+          .update(
             lm.wrapDependencyInModule(makeArtifact(gen.artifact)),
-            IO.createTemporaryDirectory,
+            UpdateConfiguration(),
+            UnresolvedWarningConfiguration(),
             log
           )
           .fold(
             e => throw new RuntimeException(s"Failed to resolve artifacts for ${gen.name}: ${e}"),
             identity
           )
-        val cloader = new URLClassLoader(files.map(_.toURI().toURL()).toArray, null)
+        val modules = updateReport
+          .configuration(Runtime)
+          .getOrElse(throw new RuntimeException("Could not not configuration"))
+          .modules
+        val files = modules.flatMap(_.artifacts.map(_._2.toURI.toURL)).toArray
+        val cloader = new URLClassLoader(
+          files,
+          null
+        )
         classLoaderMap.put(gen, cloader)
         cloader
       }
@@ -376,7 +386,7 @@ object ProtocPlugin extends AutoPlugin {
           (PB.deleteTargetDirectory in key).value,
           (streams in key).value.log,
           sandboxedLoader(
-            (ivyConfiguration in key).value,
+            IvyDependencyResolution((ivyConfiguration in key).value),
             (streams in key).value.log
           )
         )
