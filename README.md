@@ -1,7 +1,6 @@
 sbt-protoc
 ==========
-
-[![Travis CI](https://travis-ci.org/thesamet/sbt-protoc.svg?branch=master)](https://travis-ci.org/thesamet/sbt-protoc) [![AppVeyor](https://ci.appveyor.com/api/projects/status/wl4evfm0l5smimer/branch/master?svg=true)](https://ci.appveyor.com/project/thesamet/sbt-protoc/branch/master)
+[![CI](https://github.com/thesamet/sbt-protoc/workflows/CI/badge.svg)](https://github.com/thesamet/sbt-protoc/actions?query=workflow%3ACI)
 
 This plugin uses protoc to generate code from proto files. This SBT plugin is
 meant to supersede

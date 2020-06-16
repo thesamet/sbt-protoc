@@ -10,7 +10,9 @@ pull_request_rules:
   - name: merge scala-steward's PRs
     conditions:
       - author=scala-steward
-      - status-success=continuous-integration/travis-ci/pr
+      - status-success=build (ubuntu-20.04)
+      - status-success=build (macos-latest)
+      - status-success=build (windows-latest)
     actions:
       merge:
         method: squash
