@@ -7,13 +7,13 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    
+        os: ["ubuntu-20.04", "macos-latest", "windows-latest"]
+
     steps:
     - uses: actions/checkout@v1
     - uses: olafurpg/setup-scala@v5
       with:
-        java-version: 12
+        java-version: 11
     - name: Mount caches
       uses: actions/cache@v2
       with:
@@ -22,13 +22,22 @@ jobs:
           ~/.ivy2/cache
           ~/.cache/coursier
         key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
+    - name: Install tools for Native
+      if: ${{runner.os != 'Windows' }}
+      run: |
+        ./ci_setup.sh
+    - name: Remove native tests (Windows only)
+      if: ${{ runner.os == 'Windows' }}
+      run: |
+        rm -rf examples/scalapb-crossproject
+      shell: bash
     - name: Compile and test
       run: |
-       sbt -Dfile.encoding=UTF-8 ^test "^scripted settings/protobuf-src"
+       sbt ^test ^scripted
        cd examples
        for d in */ ; do cd "$d" && sbt test && cd ../ ; done
       shell: bash
     - name: Format check
-      if: ${{runner.os}} == "Linux"
+      if: ${{ runner.os == 'Linux' }}
       run: |
         sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
