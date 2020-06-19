@@ -17,9 +17,6 @@ import protocbridge.SandboxedJvmGenerator
 import java.net.URLClassLoader
 import scala.collection.mutable
 import sbt.librarymanagement.DependencyResolution
-import sbt.librarymanagement.UnresolvedWarningConfiguration
-import sbt.librarymanagement.UpdateConfiguration
-import sbt.librarymanagement.ivy.IvyDependencyResolution
 
 object ProtocPlugin extends AutoPlugin {
   object autoImport {
@@ -185,6 +182,32 @@ object ProtocPlugin extends AutoPlugin {
           PB.externalIncludePath.value,
       ).distinct,
       PB.targets := Nil,
+      dependencyResolution in PB.generate := {
+        val log = streams.value.log
+
+        val rootDependencyResolution =
+          (dependencyResolution in LocalRootProject).?.value
+
+        rootDependencyResolution.getOrElse {
+          log.warn(
+            "Falling back on a default `dependencyResolution` to " +
+              "resolve sbt-protoc plugins because `dependencyResolution` " +
+              "is not set in the root project of this build."
+          )
+          log.warn(
+            "Consider explicitly setting " +
+              "`Global / PB.generate / dependencyResolution` " +
+              "instead of relying on the default."
+          )
+
+          import sbt.librarymanagement.ivy._
+          val ivyConfig = InlineIvyConfiguration()
+            .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
+            .withLog(log)
+          IvyDependencyResolution(ivyConfig)
+        }
+
+      },
       PB.generate := sourceGeneratorTask(PB.generate)
         .dependsOn(
           // We need to unpack dependencies for all subprojects since current project is allowed to import
@@ -243,31 +266,25 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] val classLoaderMap = new mutable.HashMap[SandboxedJvmGenerator, ClassLoader]
 
-  private[this] def sandboxedLoader(lm: DependencyResolution, log: Logger)(
+  private[this] def sandboxedLoader(lm: DependencyResolution, directory: File, log: Logger)(
       gen: SandboxedJvmGenerator
   ): ClassLoader =
     classLoaderMap.synchronized {
       if (classLoaderMap.contains(gen)) classLoaderMap(gen)
       else {
-        val updateReport = lm
-          .update(
-            lm.wrapDependencyInModule(makeArtifact(gen.artifact)),
-            UpdateConfiguration(),
-            UnresolvedWarningConfiguration(),
+        val modules = lm
+          .retrieve(
+            lm.wrapDependencyInModule(makeArtifact(gen.artifact).cross(CrossVersion.disabled)),
+            directory,
             log
           )
-          .fold(
-            e => throw new RuntimeException(s"Failed to resolve artifacts for ${gen.name}: ${e}"),
-            identity
-          )
-        val modules = updateReport
-          .configuration(Runtime)
-          .getOrElse(throw new RuntimeException("Could not not configuration"))
-          .modules
-        val files = modules.flatMap(_.artifacts.map(_._2.toURI.toURL)).toArray
+          .fold(w => throw w.resolveException, identity(_))
+
+        val files = modules.map(_.toURI().toURL()).toArray
+
         val cloader = new URLClassLoader(
           files,
-          null
+          new FilteringClassLoader(getClass().getClassLoader())
         )
         classLoaderMap.put(gen, cloader)
         cloader
@@ -386,7 +403,8 @@ object ProtocPlugin extends AutoPlugin {
           (PB.deleteTargetDirectory in key).value,
           (streams in key).value.log,
           sandboxedLoader(
-            IvyDependencyResolution((ivyConfiguration in key).value),
+            (dependencyResolution in key).value,
+            (streams in key).value.cacheDirectory / "sbt-protoc",
             (streams in key).value.log
           )
         )
