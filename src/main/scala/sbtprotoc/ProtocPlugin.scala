@@ -13,7 +13,6 @@ import sbt.util.CacheImplicits
 import sjsonnew.JsonFormat
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
-import protocbridge.SandboxedJvmGenerator
 import java.net.URLClassLoader
 import scala.collection.mutable
 import sbt.librarymanagement.DependencyResolution
@@ -245,7 +244,7 @@ object ProtocPlugin extends AutoPlugin {
       includePaths: Seq[File],
       protocOptions: Seq[String],
       targets: Seq[Target],
-      sandboxedLoader: SandboxedJvmGenerator => ClassLoader
+      sandboxedLoader: protocbridge.Artifact => ClassLoader
   ): Int =
     try {
       val incPath = includePaths.map("-I" + _.getAbsolutePath)
@@ -264,29 +263,28 @@ object ProtocPlugin extends AutoPlugin {
         )
     }
 
-  private[this] val classLoaderMap = new mutable.HashMap[SandboxedJvmGenerator, ClassLoader]
+  private[this] val classLoaderMap = new mutable.WeakHashMap[protocbridge.Artifact, ClassLoader]
 
   private[this] def sandboxedLoader(lm: DependencyResolution, directory: File, log: Logger)(
-      gen: SandboxedJvmGenerator
+      artifact: protocbridge.Artifact
   ): ClassLoader =
     classLoaderMap.synchronized {
-      if (classLoaderMap.contains(gen)) classLoaderMap(gen)
+      if (classLoaderMap.contains(artifact)) classLoaderMap(artifact)
       else {
         val modules = lm
           .retrieve(
-            lm.wrapDependencyInModule(makeArtifact(gen.artifact).cross(CrossVersion.disabled)),
+            lm.wrapDependencyInModule(makeArtifact(artifact)),
             directory,
             log
           )
           .fold(w => throw w.resolveException, identity(_))
 
         val files = modules.map(_.toURI().toURL()).toArray
-
         val cloader = new URLClassLoader(
           files,
           new FilteringClassLoader(getClass().getClassLoader())
         )
-        classLoaderMap.put(gen, cloader)
+        classLoaderMap.put(artifact, cloader)
         cloader
       }
     }
@@ -299,7 +297,7 @@ object ProtocPlugin extends AutoPlugin {
       targets: Seq[Target],
       deleteTargetDirectory: Boolean,
       log: Logger,
-      sandboxedLoader: SandboxedJvmGenerator => ClassLoader
+      sandboxedLoader: protocbridge.Artifact => ClassLoader
   ) = {
     val targetPaths = targets.map(_.outputPath).toSet
 

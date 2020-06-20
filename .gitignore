@@ -1,4 +1,5 @@
 .bloop/
+.bsp
 .metals/
 project/.bloop/
 

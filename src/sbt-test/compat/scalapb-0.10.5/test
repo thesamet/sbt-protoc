@@ -1,0 +1,19 @@
+> compile
+
+$ exists target/scala-2.13/src_managed/main/test/test1/test1.scala
+$ exists target/scala-2.13/classes/test/test1/test1.class
+
+$ exists target/scala-2.13/src_managed/main/test/test2/test2.scala
+$ exists target/scala-2.13/classes/test/test2/test2.class
+
+$ absent target/scala-2.13/src_managed/main/test/Test1.java
+$ absent target/scala-2.13/src_managed/main/test/Test2.java
+
+> set PB.protocOptions in Compile += "invalid argument"
+-> compile
+> set PB.protocOptions in Compile := Nil
+> compile
+> set PB.targets in Compile := Seq(scalapb.gen(flatPackage=true) -> (sourceManaged in Compile).value)
+> compile
+$ exists target/scala-2.13/src_managed/main/test/test1.scala
+$ absent target/scala-2.13/src_managed/main/test/test1/test1.scala
