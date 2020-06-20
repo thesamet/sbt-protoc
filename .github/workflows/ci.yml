@@ -40,4 +40,4 @@ jobs:
     - name: Format check
       if: ${{ runner.os == 'Linux' }}
       run: |
-        sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck ^test ^scripted
+        sbt scalafmtCheck test:scalafmtCheck scalafmtSbtCheck
