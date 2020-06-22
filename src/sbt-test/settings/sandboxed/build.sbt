@@ -2,7 +2,7 @@ import protocbridge.{SandboxedJvmGenerator, Artifact}
 
 scalaVersion := "2.13.1"
 
-val scalaGen = SandboxedJvmGenerator(
+val scalaGen = SandboxedJvmGenerator.forModule(
   "scala",
   Artifact(
     "com.thesamet.scalapb", "compilerplugin_2.12",
