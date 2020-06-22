@@ -14,8 +14,9 @@ import sjsonnew.JsonFormat
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 import java.net.URLClassLoader
-import scala.collection.mutable
 import sbt.librarymanagement.DependencyResolution
+import protocbridge.{Artifact => BridgeArtifact}
+import collection.concurrent
 
 object ProtocPlugin extends AutoPlugin {
   object autoImport {
@@ -57,6 +58,16 @@ object ProtocPlugin extends AutoPlugin {
         "Full path for a Python.exe (deprecated and ignored)"
       )
 
+      val artifactResolver = TaskKey[BridgeArtifact => Seq[java.io.File]](
+        "artifact-resolver",
+        "Function that retrieves all transitive dependencies of a given artifact."
+      )
+
+      val cacheClassLoaders = SettingKey[Boolean](
+        "cache-classloaders",
+        "If false, all sandboxed generators will be reloaded on each invocation. This can be useful when testing a code generators and the same artifact is expected to change."
+      )
+
       val deleteTargetDirectory = SettingKey[Boolean](
         "delete-target-directory",
         "Delete target directory before regenerating sources."
@@ -87,12 +98,12 @@ object ProtocPlugin extends AutoPlugin {
       includePaths: Seq[File],
       protocOptions: Seq[String],
       deleteTargetDirectory: Boolean,
-      targets: Seq[(String, Seq[protocbridge.Artifact], File, Seq[String])]
+      targets: Seq[(String, Seq[BridgeArtifact], File, Seq[String])]
   )
 
   private[sbtprotoc] object Arguments extends CacheImplicits {
-    implicit val artifactFormat: JsonFormat[protocbridge.Artifact] =
-      caseClassArray(protocbridge.Artifact.apply _, protocbridge.Artifact.unapply _)
+    implicit val artifactFormat: JsonFormat[BridgeArtifact] =
+      caseClassArray(BridgeArtifact.apply _, BridgeArtifact.unapply _)
 
     implicit val argumentsFormat: JsonFormat[Arguments] =
       caseClassArray(Arguments.apply _, Arguments.unapply _)
@@ -170,6 +181,7 @@ object ProtocPlugin extends AutoPlugin {
       PB.recompile := {
         arguments.previous.exists(_ != arguments.value)
       },
+      PB.cacheClassLoaders := true,
       PB.protocOptions := Nil,
       PB.protoSources := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
@@ -207,6 +219,11 @@ object ProtocPlugin extends AutoPlugin {
         }
 
       },
+      PB.artifactResolver := artifactResolverImpl(
+        (dependencyResolution in PB.generate).value,
+        streams.value.cacheDirectory / "sbt-protoc",
+        streams.value.log
+      ),
       PB.generate := sourceGeneratorTask(PB.generate)
         .dependsOn(
           // We need to unpack dependencies for all subprojects since current project is allowed to import
@@ -238,13 +255,27 @@ object ProtocPlugin extends AutoPlugin {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
   }
 
+  private[this] def artifactResolverImpl(
+      lm: DependencyResolution,
+      cacheDirectory: File,
+      log: Logger
+  )(artifact: BridgeArtifact) = {
+    lm
+      .retrieve(
+        lm.wrapDependencyInModule(makeArtifact(artifact)),
+        cacheDirectory,
+        log
+      )
+      .fold(w => throw w.resolveException, identity(_))
+  }
+
   private[this] def executeProtoc(
       protocCommand: Seq[String] => Int,
       schemas: Set[File],
       includePaths: Seq[File],
       protocOptions: Seq[String],
       targets: Seq[Target],
-      sandboxedLoader: protocbridge.Artifact => ClassLoader
+      sandboxedLoader: BridgeArtifact => ClassLoader
   ): Int =
     try {
       val incPath = includePaths.map("-I" + _.getAbsolutePath)
@@ -263,31 +294,16 @@ object ProtocPlugin extends AutoPlugin {
         )
     }
 
-  private[this] val classLoaderMap = new mutable.WeakHashMap[protocbridge.Artifact, ClassLoader]
-
-  private[this] def sandboxedLoader(lm: DependencyResolution, directory: File, log: Logger)(
-      artifact: protocbridge.Artifact
-  ): ClassLoader =
-    classLoaderMap.synchronized {
-      if (classLoaderMap.contains(artifact)) classLoaderMap(artifact)
-      else {
-        val modules = lm
-          .retrieve(
-            lm.wrapDependencyInModule(makeArtifact(artifact)),
-            directory,
-            log
-          )
-          .fold(w => throw w.resolveException, identity(_))
-
-        val files = modules.map(_.toURI().toURL()).toArray
-        val cloader = new URLClassLoader(
-          files,
-          new FilteringClassLoader(getClass().getClassLoader())
-        )
-        classLoaderMap.put(artifact, cloader)
-        cloader
-      }
-    }
+  private[this] def sandboxedClassLoader(
+      resolver: BridgeArtifact => Seq[File]
+  )(artifact: BridgeArtifact): ClassLoader = {
+    val urls = resolver(artifact).map(_.toURI().toURL()).toArray
+    val cloader = new URLClassLoader(
+      urls,
+      new FilteringClassLoader(getClass().getClassLoader())
+    )
+    cloader
+  }
 
   private[this] def compile(
       protocCommand: Seq[String] => Int,
@@ -297,7 +313,7 @@ object ProtocPlugin extends AutoPlugin {
       targets: Seq[Target],
       deleteTargetDirectory: Boolean,
       log: Logger,
-      sandboxedLoader: protocbridge.Artifact => ClassLoader
+      sandboxedLoader: BridgeArtifact => ClassLoader
   ) = {
     val targetPaths = targets.map(_.outputPath).toSet
 
@@ -366,6 +382,8 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def isNativePlugin(dep: Attributed[File]): Boolean =
     dep.get(artifact.key).exists(_.`type` == PB.ProtocPlugin)
 
+  private[this] val classloaderCache = concurrent.TrieMap.empty[BridgeArtifact, ClassLoader]
+
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
       val toInclude = (includeFilter in key).value
@@ -391,6 +409,16 @@ object ProtocPlugin extends AutoPlugin {
         s"--plugin=${dep.name}=${a.data.absolutePath}"
       }
 
+      val classLoader: BridgeArtifact => ClassLoader =
+        Def.task {
+          val resolver = (PB.artifactResolver in key).value
+          val cache    = (PB.cacheClassLoaders in key).value
+          (artifact: BridgeArtifact) =>
+            if (!cache) sandboxedClassLoader(resolver)(artifact)
+            else
+              classloaderCache.getOrElseUpdate(artifact, sandboxedClassLoader(resolver)(artifact))
+        }.value
+
       def compileProto(): Set[File] =
         compile(
           (PB.runProtoc in key).value,
@@ -400,11 +428,7 @@ object ProtocPlugin extends AutoPlugin {
           (PB.targets in key).value,
           (PB.deleteTargetDirectory in key).value,
           (streams in key).value.log,
-          sandboxedLoader(
-            (dependencyResolution in key).value,
-            (streams in key).value.cacheDirectory / "sbt-protoc",
-            (streams in key).value.log
-          )
+          classLoader
         )
 
       val cachedCompile = FileFunction.cached(
@@ -449,9 +473,10 @@ object ProtocPlugin extends AutoPlugin {
       ).distinct
     }
 
-  private[this] def makeArtifact(f: protocbridge.Artifact): ModuleID = {
+  private[this] def makeArtifact(f: BridgeArtifact): ModuleID = {
     ModuleID(f.groupId, f.artifactId, f.version)
       .cross(if (f.crossVersion) CrossVersion.binary else Disabled)
+      .withExtraAttributes(f.extraAttributes)
   }
 
 }
