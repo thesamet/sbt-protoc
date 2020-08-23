@@ -17,6 +17,7 @@ import java.net.URLClassLoader
 import sbt.librarymanagement.DependencyResolution
 import protocbridge.{Artifact => BridgeArtifact}
 import collection.concurrent
+import protocbridge.{SystemDetector => BridgeSystemDetector}
 
 object ProtocPlugin extends AutoPlugin {
   object autoImport {
@@ -25,37 +26,49 @@ object ProtocPlugin extends AutoPlugin {
         "protoc-include-paths",
         "The paths that contain *.proto dependencies."
       )
+
       val additionalDependencies = SettingKey[Seq[ModuleID]](
         "additional-dependencies",
         "Additional dependencies to be added to library dependencies."
       )
+
       val externalIncludePath = SettingKey[File](
         "protoc-external-include-path",
         "The path to which protobuf:libraryDependencies are extracted and which is used as protobuf:includePath for protoc"
       )
+
       val externalSourcePath = SettingKey[File](
         "protoc-external-source-path",
         "The path to which protobuf-src:libraryDependencies are extracted and which is used as additional sources for protoc"
       )
+
       val generate = TaskKey[Seq[File]]("protoc-generate", "Compile the protobuf sources.")
+
       val unpackDependencies =
         TaskKey[UnpackedDependencies]("protoc-unpack-dependencies", "Unpack dependencies.")
 
       val protocOptions =
         SettingKey[Seq[String]]("protoc-options", "Additional options to be passed to protoc")
+
       val protoSources =
         SettingKey[Seq[File]]("protoc-sources", "Directories to look for source files")
+
       val targets = SettingKey[Seq[Target]]("protoc-targets", "List of targets to generate")
 
-      val runProtoc = SettingKey[Seq[String] => Int](
+      val protocExecutable = TaskKey[File](
+        "protoc-executable",
+        "Path to a protoc executable. Default downloads protocDependency from maven."
+      )
+
+      val runProtoc = TaskKey[Seq[String] => Int](
         "protoc-run-protoc",
         "A function that executes the protobuf compiler with the given arguments, returning the exit code of the compilation run."
       )
       val protocVersion = SettingKey[String]("protoc-version", "Version flag to pass to protoc-jar")
 
-      val pythonExe = SettingKey[String](
-        "python-executable",
-        "Full path for a Python.exe (deprecated and ignored)"
+      val protocDependency = SettingKey[ModuleID](
+        "protoc-dependency",
+        "Binary artifact for protoc on maven"
       )
 
       val artifactResolver = TaskKey[BridgeArtifact => Seq[java.io.File]](
@@ -77,6 +90,7 @@ object ProtocPlugin extends AutoPlugin {
       val Target       = protocbridge.Target
       val gens         = protocbridge.gens
       val ProtocPlugin = "protoc-plugin"
+      val ProtocBinary = "protoc-binary"
     }
 
     implicit class AsProtocPlugin(val moduleId: ModuleID) extends AnyVal {
@@ -85,7 +99,15 @@ object ProtocPlugin extends AutoPlugin {
           name = moduleId.name,
           `type` = PB.ProtocPlugin,
           extension = "exe",
-          classifier = SystemDetector.detectedClassifier()
+          classifier = BridgeSystemDetector.detectedClassifier()
+        ))
+      }
+      def asProtocBinary(): ModuleID = {
+        moduleId artifacts (Artifact(
+          name = moduleId.name,
+          `type` = PB.ProtocBinary,
+          extension = "exe",
+          classifier = BridgeSystemDetector.detectedClassifier()
         ))
       }
     }
@@ -110,6 +132,7 @@ object ProtocPlugin extends AutoPlugin {
   }
 
   import autoImport.PB
+  import autoImport.AsProtocPlugin
 
   val ProtobufConfig = config("protobuf")
 
@@ -157,8 +180,18 @@ object ProtocPlugin extends AutoPlugin {
           (update in ProtobufSrcConfig).value
         ),
       ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
-      PB.protocVersion := "-v3.11.4",
-      PB.pythonExe := "python",
+      PB.protocVersion := "3.11.4",
+      PB.protocDependency := {
+        val version =
+          if (PB.protocVersion.value.startsWith("-v")) {
+            sLog.value.warn(
+              "The PB.protocVersion setting no longer requires '-v` prefix. The prefix has been " +
+                "automatically removed. This warning will turn into an error in a future version."
+            )
+            PB.protocVersion.value.substring(2)
+          } else PB.protocVersion.value
+        ("com.google.protobuf" % "protoc" % version) asProtocBinary (),
+      },
       PB.deleteTargetDirectory := true
     )
 
@@ -236,8 +269,26 @@ object ProtocPlugin extends AutoPlugin {
           )
         )
         .value,
-      PB.runProtoc := { args =>
-        com.github.os72.protocjar.Protoc.runProtoc(PB.protocVersion.value +: args.toArray)
+      PB.protocExecutable := {
+        import CacheImplicits._
+        import sbt.librarymanagement.LibraryManagementCodec._
+        // Cached path to protoc by module id so we don't have to resolve or download twice.
+        val cachedProtoc = Cache.cached(streams.value.cacheDirectory / "sbt-protoc-by-module-id")(
+          downloadProtoc(
+            (dependencyResolution in PB.generate).value,
+            streams.value.cacheDirectory / "sbt-protoc-download",
+            streams.value.log
+          )
+        )
+
+        cachedProtoc(PB.protocDependency.value)
+      },
+      PB.runProtoc := {
+        val s    = streams.value
+        val exec = PB.protocExecutable.value.getAbsolutePath.toString
+        args =>
+          import sys.process._
+          ((maybeNixDynamicLinker.toSeq :+ exec) ++ args).!(s.log)
       },
       sourceGenerators += PB.generate
         .map(_.filter { file =>
@@ -253,6 +304,24 @@ object ProtocPlugin extends AutoPlugin {
 
   case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
+  }
+
+  private[this] def downloadProtoc(lm: DependencyResolution, targetDirectory: File, logger: Logger)(
+      moduleId: ModuleID
+  ): File = {
+    val res = lm
+      .retrieve(
+        moduleId,
+        None,
+        targetDirectory,
+        logger
+      )
+      .fold(w => throw w.resolveException, identity(_))
+    val hash   = Hash.toHex(Hash(res.head))
+    val target = targetDirectory / s"protoc-$hash.exe"
+    IO.copyFile(res.head, target)
+    target.setExecutable(true)
+    target
   }
 
   private[this] def artifactResolverImpl(
@@ -406,7 +475,17 @@ object ProtocPlugin extends AutoPlugin {
 
       val nativePluginsArgs = nativePlugins.map { a =>
         val dep = a.get(artifact.key).get
-        s"--plugin=${dep.name}=${a.data.absolutePath}"
+        val pluginPath = maybeNixDynamicLinker match {
+          case None => a.data.absolutePath
+          case Some(linker) =>
+            IO.withTemporaryFile("nix", dep.name, keepFile = true) { f =>
+              f.deleteOnExit()
+              IO.write(f, s"""#!/bin/sh\n$linker ${a.data.absolutePath} "$$@"\n""")
+              f.setExecutable(true)
+              f.getAbsolutePath()
+            }
+        }
+        s"--plugin=${dep.name}=${pluginPath}"
       }
 
       val classLoader: BridgeArtifact => ClassLoader =
@@ -479,4 +558,8 @@ object ProtocPlugin extends AutoPlugin {
       .withExtraAttributes(f.extraAttributes)
   }
 
+  private[this] def maybeNixDynamicLinker: Option[String] =
+    sys.env.get("NIX_CC").map { nixCC =>
+      IO.read(file(nixCC + "/nix-support/dynamic-linker")).trim
+    }
 }

@@ -137,13 +137,6 @@ PB.protocOptions in Compile := Seq("-xyz")
 // Excluding some proto files:
 excludeFilter in PB.generate := "test-*.proto"
 
-// Before version 0.99.15, when compiling in Windows, Python was used to bridge
-// protoc and this JVM. To set the path for Python.exe:
-// Note that this must be Python2 and not Python3.
-// Since version 0.99.15 this option has no effect, and will be removed in a
-// future version.
-PB.pythonExe := "/path/to/python.exe"
-
 // Rarely needed: override where proto files from library dependencies are
 // extracted to:
 PB.externalIncludePath := file("/tmp/foo")
@@ -153,11 +146,20 @@ PB.targets in Compile := Seq(
   scalapb.gen() -> file("/some/other/dir")
 )
 
-// Use a locally provided protoc:
+// Use a locally provided protoc (in 1.x):
+PB.protocExecutable := file("/path/to/protoc")
+// In <1.0:
 PB.runProtoc in Compile := (args => Process("/path/to/protoc", args)!)
 
 // Prevents the plugin from adding libraryDependencies to your project
 PB.additionalDependencies := Nil
+
+// Before version 0.99.15, when compiling in Windows, Python was used to bridge
+// protoc and this JVM. To set the path for Python.exe:
+// Note that this must be Python2 and not Python3.
+// Since version 0.99.15 this option has no effect, and will be removed in a
+// future version.
+PB.pythonExe := "/path/to/python.exe"
 ```
 
 Protos in other configs

@@ -1,36 +1,15 @@
 package sbtprotoc
-import java.{util => ju}
 
 object SystemDetector {
-  private val UNKNOWN   = "unknown"
-  private val X86_64_RE = "^(x8664|amd64|ia32e|em64t|x64)$".r
-  private val X86_32_RE = "^(x8632|x86|i[3-6]86|ia32|x32)$".r
+  @deprecated("Use protocbridge.SystemDetector.normalizedOs instead", "1.0.0")
+  def normalizedOs(s: String): String = protocbridge.SystemDetector.normalizedOs(s)
 
-  def normalizedOs(s: String): String =
-    normalize(s) match {
-      case p if p.startsWith("linux")                         => "linux"
-      case p if p.startsWith("osx") || p.startsWith("macosx") => "osx"
-      case p if p.startsWith("windows")                       => "windows"
-      case p if p.startsWith("freebsd")                       => "freebsd"
-      case p if p.startsWith("openbsd")                       => "openbsd"
-      case p if p.startsWith("netbsd")                        => "netbsd"
-      case _                                                  => UNKNOWN
-    }
+  @deprecated("Use protocbridge.SystemDetector.normalizedArch instead", "1.0.0")
+  def normalizedArch(s: String): String = protocbridge.SystemDetector.normalizedArch(s)
 
-  def normalizedArch(s: String): String =
-    normalize(s) match {
-      case X86_64_RE(_) => "x86_64"
-      case X86_32_RE(_) => "x86_32"
-      case _            => UNKNOWN
-    }
+  @deprecated("Use protocbridge.SystemDetector.detectedClassifier() instead", "1.0.0")
+  def detectedClassifier(): String = protocbridge.SystemDetector.detectedClassifier()
 
-  def detectedClassifier(): String = {
-    val osName = sys.props.getOrElse("os.name", "")
-    val osArch = sys.props.getOrElse("os.arch", "")
-    System.getProperty("os.name")
-    normalizedOs(osName) + "-" + normalizedArch(osArch)
-  }
-
-  def normalize(s: String) =
-    s.toLowerCase(ju.Locale.US).replaceAll("[^a-z0-9]+", "")
+  @deprecated("Use protocbridge.SystemDetector.normalize instead", "1.0.0")
+  def normalize(s: String) = protocbridge.SystemDetector.normalize(s)
 }
