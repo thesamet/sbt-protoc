@@ -288,7 +288,9 @@ object ProtocPlugin extends AutoPlugin {
         val exec = PB.protocExecutable.value.getAbsolutePath.toString
         args =>
           import sys.process._
-          ((maybeNixDynamicLinker.toSeq :+ exec) ++ args).!(s.log)
+          val cmd = (maybeNixDynamicLinker.toSeq :+ exec) ++ args
+          s.log.debug(s"Executing protoc with ${cmd.mkString("[", ", ", "]")}")
+          cmd.!(s.log)
       },
       sourceGenerators += PB.generate
         .map(_.filter { file =>
