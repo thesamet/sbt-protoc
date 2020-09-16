@@ -297,7 +297,9 @@ object ProtocPlugin extends AutoPlugin {
           val name = file.getName
           name.endsWith(".java") || name.endsWith(".scala")
         })
-        .taskValue
+        .taskValue,
+      unmanagedResourceDirectories += sourceDirectory.value / "protobuf",
+      unmanagedSourceDirectories += sourceDirectory.value / "protobuf"
     )
 
   override def projectSettings: Seq[Def.Setting[_]] =
