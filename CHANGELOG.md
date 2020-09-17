@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.0-RC2]
+* The `protobuf` source directory is now part of
+  * `unmanagedSourceDirectories` so that your IDE will take it as a part of your project and
+  * `unmanagedResourceDirectories` so that the `.proto` files will be packed into the resulting JAR.
+
 ## [1.0.0-RC1]
 * Dependency on protoc-jar has been removed. By default, the dependency on a protoc executable is provided
   through SBT's dependency management. Read below.
@@ -13,9 +18,6 @@
   with the provided arguments and returns it exit code. SBT's logging facilities are provided to the protoc process.
 * NixOS workarounds: if the environment variable `NIX_CC` is present, it is used to locate a dynamic linker (by reading `$NIX_CC/nix-support/dynamic-linker`). The located dynamic linker is used to run `protoc.exe` as well as downloaded native plugins, for seamless development experience in nix-shell. See #505.
 * Deprecated and ignored setting key pythonExe has been removed.
-* The `protobuf` source directory is now part of
-  * `unmanagedSourceDirectories` so that your IDE will take it as a part of your project and
-  * `unmanagedResourceDirectories` so that the `.proto` files will be packed into the resulting JAR.
 
 ## [0.99.31]
 
