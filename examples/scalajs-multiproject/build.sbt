@@ -1,5 +1,7 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
+ThisBuild / scalaVersion := "2.13.3"
+
 lazy val proto = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("proto"))
   .settings(
     PB.targets in Compile := Seq(
@@ -19,7 +21,8 @@ lazy val protoJVM = proto.jvm
 lazy val client = (project in file("client"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
-    name := "client"
+    name := "client",
+    scalaJSUseMainModuleInitializer := true
   )
   .dependsOn(protoJs)
 
