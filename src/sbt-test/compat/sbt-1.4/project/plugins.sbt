@@ -1,0 +1,1 @@
+../../sbt-1.0/project/plugins.sbt
