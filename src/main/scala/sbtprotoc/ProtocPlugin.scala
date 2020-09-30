@@ -355,7 +355,7 @@ object ProtocPlugin extends AutoPlugin {
       protocbridge.ProtocBridge.run(
         protocCommand,
         targets,
-        incPath ++ protocOptions ++ schemas.map(_.getAbsolutePath),
+        incPath ++ protocOptions ++ schemas.toSeq.map(_.getAbsolutePath).sorted, // sorted to ensure consistent ordering between calls
         pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance,
         classLoader = sandboxedLoader
       )
