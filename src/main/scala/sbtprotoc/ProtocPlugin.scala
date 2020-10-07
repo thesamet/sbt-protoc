@@ -152,7 +152,7 @@ object ProtocPlugin extends AutoPlugin {
     protobufProjectSettings ++ inConfig(Compile)(protobufConfigSettings) ++
       inConfig(Test)(protobufConfigSettings)
 
-  private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
+  private[this] val protobufGlobalSettings: Seq[Def.Setting[_]] =
     Seq(
       PB.protocVersion := "3.11.4",
       PB.deleteTargetDirectory := true,
@@ -189,7 +189,7 @@ object ProtocPlugin extends AutoPlugin {
       concurrentRestrictions += Tags.limit(ProtocDownload, 1)
     )
 
-  private[this] def protobufProjectSettings: Seq[Def.Setting[_]] =
+  private[this] val protobufProjectSettings: Seq[Def.Setting[_]] =
     Seq(
       PB.externalIncludePath := target.value / "protobuf_external",
       PB.externalSourcePath := target.value / "protobuf_external_src",
@@ -255,7 +255,7 @@ object ProtocPlugin extends AutoPlugin {
     )
 
   // Settings that are applied at configuration (Compile, Test) scope.
-  def protobufConfigSettings: Seq[Setting[_]] =
+  val protobufConfigSettings: Seq[Setting[_]] =
     Seq(
       arguments := Arguments(
         includePaths = PB.includePaths.value,
