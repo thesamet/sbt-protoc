@@ -10,8 +10,8 @@ import protocbridge.{DescriptorSetGenerator, Target}
 import sbt.librarymanagement.{CrossVersion, ModuleID}
 import sbt.plugins.JvmPlugin
 import sbt.util.CacheImplicits
-import sjsonnew.JsonFormat
 
+import sjsonnew.JsonFormat
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 import java.net.URLClassLoader
 import sbt.librarymanagement.DependencyResolution
@@ -144,9 +144,24 @@ object ProtocPlugin extends AutoPlugin {
 
   override def projectConfigurations: Seq[Configuration] = Seq(ProtobufConfig)
 
-  def protobufGlobalSettings: Seq[Def.Setting[_]] =
+  override def globalSettings: Seq[Def.Setting[_]] = protobufGlobalSettings
+
+  override def projectSettings: Seq[Def.Setting[_]] =
+    protobufProjectSettings ++ inConfig(Compile)(protobufConfigSettings) ++
+      inConfig(Test)(protobufConfigSettings)
+
+  private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
     Seq(
+      PB.protocVersion := "3.11.4",
+      PB.deleteTargetDirectory := true,
+      PB.cacheClassLoaders := true,
+      PB.protocOptions := Nil,
+      PB.targets := Nil,
       includeFilter in PB.generate := "*.proto",
+    )
+
+  private[this] def protobufProjectSettings: Seq[Def.Setting[_]] =
+    Seq(
       PB.externalIncludePath := target.value / "protobuf_external",
       PB.externalSourcePath := target.value / "protobuf_external_src",
       PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
@@ -180,7 +195,6 @@ object ProtocPlugin extends AutoPlugin {
           (update in ProtobufSrcConfig).value
         ),
       ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
-      PB.protocVersion := "3.11.4",
       PB.protocDependency := {
         val version =
           if (PB.protocVersion.value.startsWith("-v")) {
@@ -192,7 +206,6 @@ object ProtocPlugin extends AutoPlugin {
           } else PB.protocVersion.value
         ("com.google.protobuf" % "protoc" % version) asProtocBinary (),
       },
-      PB.deleteTargetDirectory := true
     )
 
   // Settings that are applied at configuration (Compile, Test) scope.
@@ -214,8 +227,6 @@ object ProtocPlugin extends AutoPlugin {
       PB.recompile := {
         arguments.previous.exists(_ != arguments.value)
       },
-      PB.cacheClassLoaders := true,
-      PB.protocOptions := Nil,
       PB.protoSources := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
       PB.protoSources += PB.externalSourcePath.value,
@@ -225,7 +236,6 @@ object ProtocPlugin extends AutoPlugin {
           protocIncludeDependencies.value :+
           PB.externalIncludePath.value,
       ).distinct,
-      PB.targets := Nil,
       dependencyResolution in PB.generate := {
         val log = streams.value.log
 
@@ -301,10 +311,6 @@ object ProtocPlugin extends AutoPlugin {
       unmanagedResourceDirectories += sourceDirectory.value / "protobuf",
       unmanagedSourceDirectories += sourceDirectory.value / "protobuf"
     )
-
-  override def projectSettings: Seq[Def.Setting[_]] =
-    protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings) ++
-      inConfig(Test)(protobufConfigSettings)
 
   case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
