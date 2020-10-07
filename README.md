@@ -111,6 +111,9 @@ you probably want `Compile`)
 
 Example settings:
 ```scala
+// Force the version for the protoc binary
+PB.protocVersion := "3.11.4"
+
 // Additional directories to search for imports:
 PB.includePaths in Compile ++= Seq(file("/some/other/path"))
 

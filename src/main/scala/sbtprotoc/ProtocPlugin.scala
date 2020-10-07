@@ -116,6 +116,8 @@ object ProtocPlugin extends AutoPlugin {
   // internal key for detect change options
   private[this] val arguments = TaskKey[Arguments]("protoc-arguments")
 
+  private[this] val ProtocDownload = Tags.Tag("protoc-download")
+
   private[sbtprotoc] final case class Arguments(
       includePaths: Seq[File],
       protocOptions: Seq[String],
@@ -158,6 +160,33 @@ object ProtocPlugin extends AutoPlugin {
       PB.protocOptions := Nil,
       PB.targets := Nil,
       includeFilter in PB.generate := "*.proto",
+      dependencyResolution in PB.generate := {
+        val log = streams.value.log
+
+        val rootDependencyResolution =
+          (dependencyResolution in LocalRootProject).?.value
+
+        rootDependencyResolution.getOrElse {
+          log.warn(
+            "Falling back on a default `dependencyResolution` to " +
+              "resolve sbt-protoc plugins because `dependencyResolution` " +
+              "is not set in the root project of this build."
+          )
+          log.warn(
+            "Consider explicitly setting " +
+              "`Global / PB.generate / dependencyResolution` " +
+              "instead of relying on the default."
+          )
+
+          import sbt.librarymanagement.ivy._
+          val ivyConfig = InlineIvyConfiguration()
+            .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
+            .withLog(log)
+          IvyDependencyResolution(ivyConfig)
+        }
+      },
+      // prevent protoc binary cache stampede when initializing projects with many modules by serializing executions
+      concurrentRestrictions += Tags.limit(ProtocDownload, 1)
     )
 
   private[this] def protobufProjectSettings: Seq[Def.Setting[_]] =
@@ -206,6 +235,23 @@ object ProtocPlugin extends AutoPlugin {
           } else PB.protocVersion.value
         ("com.google.protobuf" % "protoc" % version) asProtocBinary (),
       },
+      PB.protocExecutable := {
+        import CacheImplicits._
+        import sbt.librarymanagement.LibraryManagementCodec._
+        // Cached path to protoc by module id so we don't have to resolve or download twice,
+        // within the same task invocation across modules or across task invocations
+        val globalCacheDirectory = (streams in Global).value.cacheDirectory
+        val cachedProtoc = Cache.cached(globalCacheDirectory / "sbt-protoc-by-module-id")(
+          downloadProtoc(
+            (dependencyResolution in PB.generate).value,
+            globalCacheDirectory / "sbt-protoc-download",
+            streams.value.log
+          )
+        )
+
+        cachedProtoc(PB.protocDependency.value)
+      },
+      PB.protocExecutable := PB.protocExecutable.tag(ProtocDownload).value
     )
 
   // Settings that are applied at configuration (Compile, Test) scope.
@@ -236,32 +282,6 @@ object ProtocPlugin extends AutoPlugin {
           protocIncludeDependencies.value :+
           PB.externalIncludePath.value,
       ).distinct,
-      dependencyResolution in PB.generate := {
-        val log = streams.value.log
-
-        val rootDependencyResolution =
-          (dependencyResolution in LocalRootProject).?.value
-
-        rootDependencyResolution.getOrElse {
-          log.warn(
-            "Falling back on a default `dependencyResolution` to " +
-              "resolve sbt-protoc plugins because `dependencyResolution` " +
-              "is not set in the root project of this build."
-          )
-          log.warn(
-            "Consider explicitly setting " +
-              "`Global / PB.generate / dependencyResolution` " +
-              "instead of relying on the default."
-          )
-
-          import sbt.librarymanagement.ivy._
-          val ivyConfig = InlineIvyConfiguration()
-            .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
-            .withLog(log)
-          IvyDependencyResolution(ivyConfig)
-        }
-
-      },
       PB.artifactResolver := artifactResolverImpl(
         (dependencyResolution in PB.generate).value,
         streams.value.cacheDirectory / "sbt-protoc",
@@ -279,20 +299,6 @@ object ProtocPlugin extends AutoPlugin {
           )
         )
         .value,
-      PB.protocExecutable := {
-        import CacheImplicits._
-        import sbt.librarymanagement.LibraryManagementCodec._
-        // Cached path to protoc by module id so we don't have to resolve or download twice.
-        val cachedProtoc = Cache.cached(streams.value.cacheDirectory / "sbt-protoc-by-module-id")(
-          downloadProtoc(
-            (dependencyResolution in PB.generate).value,
-            streams.value.cacheDirectory / "sbt-protoc-download",
-            streams.value.log
-          )
-        )
-
-        cachedProtoc(PB.protocDependency.value)
-      },
       PB.runProtoc := {
         val s    = streams.value
         val exec = PB.protocExecutable.value.getAbsolutePath.toString
