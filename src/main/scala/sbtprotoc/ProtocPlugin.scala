@@ -10,8 +10,8 @@ import protocbridge.{DescriptorSetGenerator, Target}
 import sbt.librarymanagement.{CrossVersion, ModuleID}
 import sbt.plugins.JvmPlugin
 import sbt.util.CacheImplicits
-import sjsonnew.JsonFormat
 
+import sjsonnew.JsonFormat
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 import java.net.URLClassLoader
 import sbt.librarymanagement.DependencyResolution
@@ -148,72 +148,84 @@ object ProtocPlugin extends AutoPlugin {
 
   override def projectConfigurations: Seq[Configuration] = Seq(ProtobufConfig)
 
-  override def globalSettings: Seq[Def.Setting[_]] = Seq(
-    dependencyResolution in PB.generate := {
-      val log = streams.value.log
+  override def globalSettings: Seq[Def.Setting[_]] = protobufGlobalSettings
 
-      val rootDependencyResolution =
-        (dependencyResolution in LocalRootProject).?.value
+  private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
+    Seq(
+      PB.protocVersion := "3.13.0",
+      PB.deleteTargetDirectory := true,
+      PB.cacheClassLoaders := true,
+      PB.protocOptions := Nil,
+      PB.targets := Nil,
+      includeFilter in PB.generate := "*.proto",
+      dependencyResolution in PB.generate := {
+        val log = streams.value.log
 
-      rootDependencyResolution.getOrElse {
-        log.warn(
-          "Falling back on a default `dependencyResolution` to " +
-            "resolve sbt-protoc plugins because `dependencyResolution` " +
-            "is not set in the root project of this build."
-        )
-        log.warn(
-          "Consider explicitly setting " +
-            "`Global / PB.generate / dependencyResolution` " +
-            "instead of relying on the default."
-        )
+        val rootDependencyResolution =
+          (dependencyResolution in LocalRootProject).?.value
 
-        import sbt.librarymanagement.ivy._
-        val ivyConfig = InlineIvyConfiguration()
-          .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
-          .withLog(log)
-        IvyDependencyResolution(ivyConfig)
-      }
-    },
-    PB.protocCache := {
-      val log = streams.value.log
-      val lm  = (dependencyResolution in PB.generate).value
+        rootDependencyResolution.getOrElse {
+          log.warn(
+            "Falling back on a default `dependencyResolution` to " +
+              "resolve sbt-protoc plugins because `dependencyResolution` " +
+              "is not set in the root project of this build."
+          )
+          log.warn(
+            "Consider explicitly setting " +
+              "`Global / PB.generate / dependencyResolution` " +
+              "instead of relying on the default."
+          )
 
-      def downloadArtifact(moduleId: ModuleID): Future[File] =
-        Future {
-          blocking {
-            IO.withTemporaryDirectory { tmpDir =>
-              lm.retrieve(
-                moduleId,
-                None,
-                tmpDir,
-                log
-              ).fold(w => throw w.resolveException, _.head)
+          import sbt.librarymanagement.ivy._
+          val ivyConfig = InlineIvyConfiguration()
+            .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
+            .withLog(log)
+          IvyDependencyResolution(ivyConfig)
+        }
+      },
+      PB.protocCache := {
+        val log = streams.value.log
+        val lm  = (dependencyResolution in PB.generate).value
+
+        def downloadArtifact(moduleId: ModuleID): Future[File] =
+          Future {
+            blocking {
+              IO.withTemporaryDirectory { tmpDir =>
+                lm.retrieve(
+                  moduleId,
+                  None,
+                  tmpDir,
+                  log
+                ).fold(w => throw w.resolveException, _.head)
+              }
             }
           }
+
+        def cacheKey(moduleId: ModuleID): String = {
+          val classifier = moduleId.explicitArtifacts.headOption.flatMap(_.classifier).getOrElse("")
+          val ext        = if (classifier.startsWith("win")) ".exe" else ""
+          s"${moduleId.name}-$classifier-${moduleId.revision}$ext"
         }
 
-      def cacheKey(moduleId: ModuleID): String = {
-        val classifier = moduleId.explicitArtifacts.headOption.flatMap(_.classifier).getOrElse("")
-        val ext        = if (classifier.startsWith("win")) ".exe" else ""
-        s"${moduleId.name}-$classifier-${moduleId.revision}$ext"
-      }
-
-      new protocbridge.FileCache[ModuleID](
-        protocbridge.FileCache.cacheDir,
-        downloadArtifact,
-        cacheKey
+        new protocbridge.FileCache[ModuleID](
+          protocbridge.FileCache.cacheDir,
+          downloadArtifact,
+          cacheKey
+        )
+      },
+      PB.artifactResolver := artifactResolverImpl(
+        (dependencyResolution in PB.generate).value,
+        streams.value.cacheDirectory / "sbt-protoc",
+        streams.value.log
       )
-    },
-    PB.artifactResolver := artifactResolverImpl(
-      (dependencyResolution in PB.generate).value,
-      streams.value.cacheDirectory / "sbt-protoc",
-      streams.value.log
     )
-  )
 
-  def protobufGlobalSettings: Seq[Def.Setting[_]] =
+  override def projectSettings: Seq[Def.Setting[_]] =
+    protobufProjectSettings ++ inConfig(Compile)(protobufConfigSettings) ++
+      inConfig(Test)(protobufConfigSettings)
+
+  private[this] val protobufProjectSettings: Seq[Def.Setting[_]] =
     Seq(
-      includeFilter in PB.generate := "*.proto",
       PB.externalIncludePath := target.value / "protobuf_external",
       PB.externalSourcePath := target.value / "protobuf_external_src",
       PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
@@ -247,7 +259,6 @@ object ProtocPlugin extends AutoPlugin {
           (update in ProtobufSrcConfig).value
         ),
       ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
-      PB.protocVersion := "3.11.4",
       PB.protocDependency := {
         val version =
           if (PB.protocVersion.value.startsWith("-v")) {
@@ -259,11 +270,16 @@ object ProtocPlugin extends AutoPlugin {
           } else PB.protocVersion.value
         ("com.google.protobuf" % "protoc" % version) asProtocBinary (),
       },
-      PB.deleteTargetDirectory := true
+      PB.protocExecutable := {
+        scala.concurrent.Await.result(
+          PB.protocCache.value.get(PB.protocDependency.value),
+          scala.concurrent.duration.Duration.Inf
+        )
+      }
     )
 
   // Settings that are applied at configuration (Compile, Test) scope.
-  def protobufConfigSettings: Seq[Setting[_]] =
+  val protobufConfigSettings: Seq[Setting[_]] =
     Seq(
       arguments := Arguments(
         includePaths = PB.includePaths.value,
@@ -281,8 +297,6 @@ object ProtocPlugin extends AutoPlugin {
       PB.recompile := {
         arguments.previous.exists(_ != arguments.value)
       },
-      PB.cacheClassLoaders := true,
-      PB.protocOptions := Nil,
       PB.protoSources := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
       PB.protoSources += PB.externalSourcePath.value,
@@ -292,7 +306,6 @@ object ProtocPlugin extends AutoPlugin {
           protocIncludeDependencies.value :+
           PB.externalIncludePath.value,
       ).distinct,
-      PB.targets := Nil,
       PB.generate := sourceGeneratorTask(PB.generate)
         .dependsOn(
           // We need to unpack dependencies for all subprojects since current project is allowed to import
@@ -305,12 +318,6 @@ object ProtocPlugin extends AutoPlugin {
           )
         )
         .value,
-      PB.protocExecutable := {
-        scala.concurrent.Await.result(
-          PB.protocCache.value.get(PB.protocDependency.value),
-          scala.concurrent.duration.Duration.Inf
-        )
-      },
       PB.runProtoc := {
         val s    = streams.value
         val exec = PB.protocExecutable.value.getAbsolutePath.toString
@@ -329,10 +336,6 @@ object ProtocPlugin extends AutoPlugin {
       unmanagedResourceDirectories += sourceDirectory.value / "protobuf",
       unmanagedSourceDirectories += sourceDirectory.value / "protobuf"
     )
-
-  override def projectSettings: Seq[Def.Setting[_]] =
-    protobufGlobalSettings ++ inConfig(Compile)(protobufConfigSettings) ++
-      inConfig(Test)(protobufConfigSettings)
 
   case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
