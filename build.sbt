@@ -15,7 +15,6 @@ scalaVersion := "2.12.10"
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.0")
 
 libraryDependencies ++= Seq(
-  "com.github.os72"       % "protoc-jar"    % "3.11.4",
   "com.thesamet.scalapb" %% "protoc-bridge" % "0.9.0-RC5"
 )
 

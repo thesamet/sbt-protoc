@@ -17,7 +17,9 @@ import java.net.URLClassLoader
 import sbt.librarymanagement.DependencyResolution
 import protocbridge.{Artifact => BridgeArtifact}
 import collection.concurrent
-import protocbridge.{SystemDetector => BridgeSystemDetector}
+import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache}
+import scala.concurrent.{Future, blocking}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object ProtocPlugin extends AutoPlugin {
   object autoImport {
@@ -75,6 +77,8 @@ object ProtocPlugin extends AutoPlugin {
         "artifact-resolver",
         "Function that retrieves all transitive dependencies of a given artifact."
       )
+
+      val protocCache = TaskKey[FileCache[ModuleID]]("protoc-cache", "Cache of protoc executables")
 
       val cacheClassLoaders = SettingKey[Boolean](
         "cache-classloaders",
@@ -143,6 +147,69 @@ object ProtocPlugin extends AutoPlugin {
   override def requires: Plugins = JvmPlugin
 
   override def projectConfigurations: Seq[Configuration] = Seq(ProtobufConfig)
+
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(
+    dependencyResolution in PB.generate := {
+      val log = streams.value.log
+
+      val rootDependencyResolution =
+        (dependencyResolution in LocalRootProject).?.value
+
+      rootDependencyResolution.getOrElse {
+        log.warn(
+          "Falling back on a default `dependencyResolution` to " +
+            "resolve sbt-protoc plugins because `dependencyResolution` " +
+            "is not set in the root project of this build."
+        )
+        log.warn(
+          "Consider explicitly setting " +
+            "`Global / PB.generate / dependencyResolution` " +
+            "instead of relying on the default."
+        )
+
+        import sbt.librarymanagement.ivy._
+        val ivyConfig = InlineIvyConfiguration()
+          .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
+          .withLog(log)
+        IvyDependencyResolution(ivyConfig)
+      }
+    },
+    PB.protocCache := {
+      val log = streams.value.log
+      val lm  = (dependencyResolution in PB.generate).value
+
+      def downloadArtifact(moduleId: ModuleID): Future[File] =
+        Future {
+          blocking {
+            IO.withTemporaryDirectory { tmpDir =>
+              lm.retrieve(
+                moduleId,
+                None,
+                tmpDir,
+                log
+              ).fold(w => throw w.resolveException, _.head)
+            }
+          }
+        }
+
+      def cacheKey(moduleId: ModuleID): String = {
+        val classifier = moduleId.explicitArtifacts.headOption.flatMap(_.classifier).getOrElse("")
+        val ext        = if (classifier.startsWith("win")) ".exe" else ""
+        s"${moduleId.name}-$classifier-${moduleId.revision}$ext"
+      }
+
+      new protocbridge.FileCache[ModuleID](
+        protocbridge.FileCache.cacheDir,
+        downloadArtifact,
+        cacheKey
+      )
+    },
+    PB.artifactResolver := artifactResolverImpl(
+      (dependencyResolution in PB.generate).value,
+      streams.value.cacheDirectory / "sbt-protoc",
+      streams.value.log
+    )
+  )
 
   def protobufGlobalSettings: Seq[Def.Setting[_]] =
     Seq(
@@ -226,37 +293,6 @@ object ProtocPlugin extends AutoPlugin {
           PB.externalIncludePath.value,
       ).distinct,
       PB.targets := Nil,
-      dependencyResolution in PB.generate := {
-        val log = streams.value.log
-
-        val rootDependencyResolution =
-          (dependencyResolution in LocalRootProject).?.value
-
-        rootDependencyResolution.getOrElse {
-          log.warn(
-            "Falling back on a default `dependencyResolution` to " +
-              "resolve sbt-protoc plugins because `dependencyResolution` " +
-              "is not set in the root project of this build."
-          )
-          log.warn(
-            "Consider explicitly setting " +
-              "`Global / PB.generate / dependencyResolution` " +
-              "instead of relying on the default."
-          )
-
-          import sbt.librarymanagement.ivy._
-          val ivyConfig = InlineIvyConfiguration()
-            .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
-            .withLog(log)
-          IvyDependencyResolution(ivyConfig)
-        }
-
-      },
-      PB.artifactResolver := artifactResolverImpl(
-        (dependencyResolution in PB.generate).value,
-        streams.value.cacheDirectory / "sbt-protoc",
-        streams.value.log
-      ),
       PB.generate := sourceGeneratorTask(PB.generate)
         .dependsOn(
           // We need to unpack dependencies for all subprojects since current project is allowed to import
@@ -270,18 +306,10 @@ object ProtocPlugin extends AutoPlugin {
         )
         .value,
       PB.protocExecutable := {
-        import CacheImplicits._
-        import sbt.librarymanagement.LibraryManagementCodec._
-        // Cached path to protoc by module id so we don't have to resolve or download twice.
-        val cachedProtoc = Cache.cached(streams.value.cacheDirectory / "sbt-protoc-by-module-id")(
-          downloadProtoc(
-            (dependencyResolution in PB.generate).value,
-            streams.value.cacheDirectory / "sbt-protoc-download",
-            streams.value.log
-          )
+        scala.concurrent.Await.result(
+          PB.protocCache.value.get(PB.protocDependency.value),
+          scala.concurrent.duration.Duration.Inf
         )
-
-        cachedProtoc(PB.protocDependency.value)
       },
       PB.runProtoc := {
         val s    = streams.value
@@ -308,24 +336,6 @@ object ProtocPlugin extends AutoPlugin {
 
   case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
-  }
-
-  private[this] def downloadProtoc(lm: DependencyResolution, targetDirectory: File, logger: Logger)(
-      moduleId: ModuleID
-  ): File = {
-    val res = lm
-      .retrieve(
-        moduleId,
-        None,
-        targetDirectory,
-        logger
-      )
-      .fold(w => throw w.resolveException, identity(_))
-    val hash   = Hash.toHex(Hash(res.head))
-    val target = targetDirectory / s"protoc-$hash.exe"
-    IO.copyFile(res.head, target)
-    target.setExecutable(true)
-    target
   }
 
   private[this] def artifactResolverImpl(
@@ -568,4 +578,5 @@ object ProtocPlugin extends AutoPlugin {
     sys.env.get("NIX_CC").map { nixCC =>
       IO.read(file(nixCC + "/nix-support/dynamic-linker")).trim
     }
+
 }
