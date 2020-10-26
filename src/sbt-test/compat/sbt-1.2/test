@@ -1,0 +1,3 @@
+> compile
+$ exists target/scala-2.13/src_managed/main/test/Test.java
+$ exists target/scala-2.13/classes/test/Test.class
