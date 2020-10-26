@@ -1,6 +1,8 @@
 package sbtprotoc
 
-import sbt._
+// avoid ambiguous import when sjsonnew.CollectionFormats.seqFormat is brought in scope by ignoring sbt 1.3 implicit
+// https://github.com/sbt/sbt/commit/33194233698ab49682d89091a332edb808cb75bc#diff-cafb18f4282f4fff753f9efb35169d46R39
+import sbt.{fileJsonFormatter => _, _}
 import Keys._
 import java.io.File
 
@@ -561,18 +563,17 @@ object ProtocPlugin extends AutoPlugin {
 
   def protocIncludeDependencies: Def.Initialize[Seq[File]] =
     Def.setting {
+      def filter =
+        ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
       (
         PB.protoSources.?.all(filter).value.map(_.getOrElse(Nil)).flatten ++
           PB.includePaths.?.all(filter).value.map(_.getOrElse(Nil)).flatten
       ).distinct
     }
 
-  private[this] def filter: ScopeFilter =
-    ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
-
   private[this] def makeArtifact(f: BridgeArtifact): ModuleID = {
     ModuleID(f.groupId, f.artifactId, f.version)
-      .cross(if (f.crossVersion) CrossVersion.binary else CrossVersion.disabled)
+      .cross(if (f.crossVersion) CrossVersion.binary else Disabled)
       .withExtraAttributes(f.extraAttributes)
   }
 

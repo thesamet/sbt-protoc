@@ -24,9 +24,6 @@ scriptedBufferLog := false
 
 scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
 
-// https://github.com/sbt/sbt/issues/5049#issuecomment-538404839
-pluginCrossBuild / sbtVersion := "1.2.8"
-
 licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
 
 publishMavenStyle := false
