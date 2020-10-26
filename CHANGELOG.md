@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0-RC3]
+* protoc executable is now cached under the user cache directory. The path
+  used is platform dependent:
+  * Linux/BSD/SOLARIS: `$XDG_CACHE_HOME/protocbridge/v1` or `$HOME/.cache/protocbridge/v1`
+  * Windows: `{FOLDERID_LocalApplicationData}/protocbridge/protocbridge/cache`
+  * OS X: `$HOME/Library/Caches/com.thesamet.scalapb/protocbridge/protocbridge/v1`
+  The value is computed using the [directories](https://github.com/dirs-dev/directories-jvm) library
+  and can be overridden by setting `PROTOC_CACHE` environment variable or the
+  `protoc.cache` system property. If both are set, then the environment
+  variable takes precedence.
+
 ## [1.0.0-RC2]
 * The `protobuf` source directory is now part of
   * `unmanagedSourceDirectories` so that your IDE will take it as a part of your project and
