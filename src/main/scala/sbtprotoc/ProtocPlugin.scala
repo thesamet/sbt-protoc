@@ -187,17 +187,15 @@ object ProtocPlugin extends AutoPlugin {
         val log = streams.value.log
         val lm  = (dependencyResolution in PB.generate).value
 
-        def downloadArtifact(moduleId: ModuleID): Future[File] =
+        def downloadArtifact(targetDirectory: File, moduleId: ModuleID): Future[File] =
           Future {
             blocking {
-              IO.withTemporaryDirectory { tmpDir =>
-                lm.retrieve(
-                  moduleId,
-                  None,
-                  tmpDir,
-                  log
-                ).fold(w => throw w.resolveException, _.head)
-              }
+              lm.retrieve(
+                moduleId,
+                None,
+                targetDirectory,
+                log
+              ).fold(w => throw w.resolveException, _.head)
             }
           }
 
