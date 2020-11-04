@@ -1,1 +1,0 @@
-../sbt-1.0/build.sbt
