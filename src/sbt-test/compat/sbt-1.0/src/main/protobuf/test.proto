@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package test;
-
-message Hello {
-  int32 world = 1;
-}
