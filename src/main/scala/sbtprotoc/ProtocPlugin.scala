@@ -490,16 +490,17 @@ object ProtocPlugin extends AutoPlugin {
 
       val nativePluginsArgs = nativePlugins.map { a =>
         val dep = a.get(artifact.key).get
-        val pluginPath = maybeNixDynamicLinker match {
-          case None => a.data.absolutePath
-          case Some(linker) =>
-            IO.withTemporaryFile("nix", dep.name, keepFile = true) { f =>
-              f.deleteOnExit()
-              IO.write(f, s"""#!/bin/sh\n$linker ${a.data.absolutePath} "$$@"\n""")
-              f.setExecutable(true)
-              f.getAbsolutePath()
-            }
-        }
+        val pluginPath =
+          maybeNixDynamicLinker.filterNot(_ => a.data.getName.endsWith(".sh")) match {
+            case None => a.data.absolutePath
+            case Some(linker) =>
+              IO.withTemporaryFile("nix", dep.name, keepFile = true) { f =>
+                f.deleteOnExit()
+                IO.write(f, s"""#!/bin/sh\n$linker ${a.data.absolutePath} "$$@"\n""")
+                f.setExecutable(true)
+                f.getAbsolutePath()
+              }
+          }
         s"--plugin=${dep.name}=${pluginPath}"
       }
 
