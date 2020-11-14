@@ -360,7 +360,10 @@ object ProtocPlugin extends AutoPlugin {
       sandboxedLoader: BridgeArtifact => ClassLoader
   ): Int =
     try {
-      val incPath = includePaths.map("-I" + _.getAbsolutePath)
+      // Remove inexistent paths from protoc command line to avoid warnings.
+      val incPath = includePaths.collect {
+        case f if f.exists() => "-I" + f.getAbsolutePath
+      }
       protocbridge.ProtocBridge.run(
         protocCommand,
         targets,
@@ -541,10 +544,6 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
-      // unpack() creates those dirs when there are jars to unpack, but not when there is
-      // nothing to unpack. This leads to a protoc warning. See #152
-      Seq(PB.externalSourcePath.value, PB.externalIncludePath.value).foreach(_.mkdirs)
-
       val extractedFiles = unpack(
         (managedClasspath in (ProtobufConfig, key)).value.map(_.data),
         (PB.externalIncludePath in key).value,
