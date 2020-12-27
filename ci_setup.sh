@@ -2,10 +2,6 @@
 set -e
 
 if [ "$(uname)" == "Darwin" ]; then
-    # workaround for https://github.com/actions/virtual-environments/issues/1811
-    brew untap local/homebrew-openssl
-    brew untap local/homebrew-python2
-    # end workaround for https://github.com/actions/virtual-environments/issues/1811
     brew update
     brew install bdw-gc
     brew link bdw-gc
