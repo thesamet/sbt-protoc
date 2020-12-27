@@ -151,6 +151,7 @@ PB.targets in Compile := Seq(
 
 // Use a locally provided protoc (in 1.x):
 PB.protocExecutable := file("/path/to/protoc")
+
 // In <1.0:
 PB.runProtoc in Compile := (args => Process("/path/to/protoc", args)!)
 

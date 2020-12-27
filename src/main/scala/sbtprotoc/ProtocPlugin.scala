@@ -4,7 +4,7 @@ import sbt._
 import Keys._
 import java.io.File
 
-import protocbridge.{DescriptorSetGenerator, Target}
+import protocbridge.{DescriptorSetGenerator, Target, ProtocRunner}
 import sbt.librarymanagement.{CrossVersion, ModuleID}
 import sbt.plugins.JvmPlugin
 import sbt.util.CacheImplicits
@@ -60,9 +60,9 @@ object ProtocPlugin extends AutoPlugin {
         "Path to a protoc executable. Default downloads protocDependency from maven."
       )
 
-      val runProtoc = TaskKey[Seq[String] => Int](
+      val runProtoc = TaskKey[ProtocRunner[Int]](
         "protoc-run-protoc",
-        "A function that executes the protobuf compiler with the given arguments, returning the exit code of the compilation run."
+        "protocbridge.ProtocRunner is a function object that executes protoc with given command line arguments and environment variables, returning the exit code of the compilation run."
       )
       val protocVersion = SettingKey[String]("protoc-version", "Version flag to pass to protoc-jar")
 
@@ -113,6 +113,14 @@ object ProtocPlugin extends AutoPlugin {
         ))
       }
     }
+
+    val ProtocRunner = protocbridge.ProtocRunner
+
+    // Key type for PB.protocRun has changed, this provides
+    import scala.language.implicitConversions
+    @deprecated("PB.protocRun expects now a protocbridge.ProtocRunner.", "1.0.0")
+    implicit def protocRunnerConverter(f: Seq[String] => Int): protocbridge.ProtocRunner[Int] =
+      protocbridge.ProtocRunner.fromFunction((args, extraEnv) => f(args))
   }
 
   // internal key for detect change options
@@ -317,11 +325,12 @@ object ProtocPlugin extends AutoPlugin {
       PB.runProtoc := {
         val s    = streams.value
         val exec = PB.protocExecutable.value.getAbsolutePath.toString
-        args =>
-          import sys.process._
-          val cmd = (maybeNixDynamicLinker.toSeq :+ exec) ++ args
-          s.log.debug(s"Executing protoc with ${cmd.mkString("[", ", ", "]")}")
-          cmd.!(s.log)
+        (protocbridge.ProtocRunner.fromFunction { (args, extraEnv) =>
+          s.log.debug(
+            s"Executing protoc with ${args.mkString("[", ", ", "]")} and extraEnv=$extraEnv"
+          )
+          ()
+        } zip protocbridge.ProtocRunner(exec)).map(_._2)
       },
       sourceGenerators += PB.generate
         .map(_.filter { file =>
@@ -352,7 +361,7 @@ object ProtocPlugin extends AutoPlugin {
   }
 
   private[this] def executeProtoc(
-      protocCommand: Seq[String] => Int,
+      protocRunner: ProtocRunner[Int],
       schemas: Set[File],
       includePaths: Seq[File],
       protocOptions: Seq[String],
@@ -365,7 +374,7 @@ object ProtocPlugin extends AutoPlugin {
         case f if f.exists() => "-I" + f.getAbsolutePath
       }
       protocbridge.ProtocBridge.run(
-        protocCommand,
+        protocRunner,
         targets,
         incPath ++ protocOptions ++ schemas.toSeq
           .map(_.getAbsolutePath)
@@ -393,7 +402,7 @@ object ProtocPlugin extends AutoPlugin {
   }
 
   private[this] def compile(
-      protocCommand: Seq[String] => Int,
+      protocRunner: ProtocRunner[Int],
       schemas: Set[File],
       includePaths: Seq[File],
       protocOptions: Seq[String],
@@ -425,7 +434,7 @@ object ProtocPlugin extends AutoPlugin {
       schemas.foreach(schema => log.info("Compiling schema %s" format schema))
 
       val exitCode =
-        executeProtoc(protocCommand, schemas, includePaths, protocOptions, targets, sandboxedLoader)
+        executeProtoc(protocRunner, schemas, includePaths, protocOptions, targets, sandboxedLoader)
       if (exitCode != 0)
         sys.error("protoc returned exit code: %d" format exitCode)
 
