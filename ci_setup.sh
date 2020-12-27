@@ -3,8 +3,6 @@ set -e
 
 if [ "$(uname)" == "Darwin" ]; then
     brew update
-    brew install bdw-gc
-    brew link bdw-gc
     brew install jq
     brew install re2
     brew install llvm
