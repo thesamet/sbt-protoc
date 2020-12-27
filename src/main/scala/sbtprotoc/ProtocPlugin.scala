@@ -373,13 +373,12 @@ object ProtocPlugin extends AutoPlugin {
       val incPath = includePaths.collect {
         case f if f.exists() => "-I" + f.getAbsolutePath
       }
-      protocbridge.ProtocBridge.run(
+      protocbridge.ProtocBridge.execute(
         protocRunner,
         targets,
         incPath ++ protocOptions ++ schemas.toSeq
           .map(_.getAbsolutePath)
           .sorted, // sorted to ensure consistent ordering between calls
-        pluginFrontend = protocbridge.frontend.PluginFrontend.newInstance,
         classLoader = sandboxedLoader
       )
     } catch {
