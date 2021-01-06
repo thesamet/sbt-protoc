@@ -142,7 +142,7 @@ excludeFilter in PB.generate := "test-*.proto"
 
 // Rarely needed: override where proto files from library dependencies are
 // extracted to:
-PB.externalIncludePath := file("/tmp/foo")
+PB.externalIncludePath in Compile := file("/tmp/foo")
 
 // By default we generate into target/src_managed. To customize:
 PB.targets in Compile := Seq(
