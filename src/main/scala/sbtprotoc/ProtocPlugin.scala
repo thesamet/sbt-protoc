@@ -161,8 +161,6 @@ object ProtocPlugin extends AutoPlugin {
       PB.protocVersion := "3.13.0",
       PB.deleteTargetDirectory := true,
       PB.cacheClassLoaders := true,
-      PB.protocOptions := Nil,
-      PB.targets := Nil,
       includeFilter in PB.generate := "*.proto",
       dependencyResolution in PB.generate := {
         val log = streams.value.log
@@ -301,6 +299,8 @@ object ProtocPlugin extends AutoPlugin {
       PB.recompile := {
         arguments.previous.exists(_ != arguments.value)
       },
+      PB.protocOptions := Nil,
+      PB.targets := Nil,
       PB.protoSources := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
       PB.protoSources += PB.externalSourcePath.value,
