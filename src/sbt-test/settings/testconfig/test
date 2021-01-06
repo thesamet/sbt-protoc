@@ -6,21 +6,24 @@ $ exists target/scala-2.12/classes/multi/File1.class
 $ exists target/scala-2.12/src_managed/main/multi/File2.java
 $ exists target/scala-2.12/classes/multi/File2.class
 
+$ exists target/descriptor.pb
+
 $ absent target/scala-2.12/src_managed/main/multi/File3.java
 $ absent target/scala-2.12/classes/multi/File3.class
 
 $ absent target/scala-2.12/src_managed/test/multi/File3.java
 $ absent target/scala-2.12/classes/multi/File3.class
 
-> test:compile
-$ exists target/scala-2.12/src_managed/test/multi/File3.java
-$ exists target/scala-2.12/test-classes/multi/File3.class
-
-$ absent target/scala-2.12/src_managed/main/multi/File3.java
-$ absent target/scala-2.12/classes/multi/File3.class
-
 > clean
+# don't test:compile to avoid triggering compile:protocGenerate, so that we can observe that generators/options in Compile were not used
+> test:protocGenerate
 
 $ absent target/scala-2.12/src_managed/main/multi/File1.java
 $ absent target/scala-2.12/src_managed/main/multi/File2.java
+$ absent target/descriptor.pb
+$ exists target/scala-2.12/src_managed/test/multi/File3.java
+$ absent target/scala-2.12/src_managed/main/multi/File3.java
+
+> clean
+
 $ absent target/scala-2.12/src_managed/test/multi/File3.java
