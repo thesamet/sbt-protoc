@@ -62,6 +62,20 @@ PB.targets in Compile := Seq(
 )
 ```
 
+To make standard google.protobuf types available to import:
+```
+libraryDependencies ++= Seq(
+  "com.google.protobuf" % "protobuf-java" % "3.13.0" % "protobuf"
+)
+```
+The following includes both standard google.protobuf types and ScalaPB:
+
+```scala
+libraryDependencies ++= Seq(
+    "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
+)
+```
+
 ## Download plugins that are available on maven repository
 
 To download an artifact and use it as a code generator plugin:
@@ -119,7 +133,7 @@ PB.includePaths in Compile ++= Seq(file("/some/other/path"))
 
 // Make protos from some Jar available to import.
 libraryDependencies ++= Seq(
-  "com.google.protobuf" % "protobuf-java" % "3.7.0" % "protobuf"
+  "com.google.protobuf" % "protobuf-java" % "3.13.0" % "protobuf"
 )
 
 // Compile protos from some Jar (and make them available to import). Without
