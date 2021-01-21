@@ -166,7 +166,7 @@ PB.targets in Compile := Seq(
 // Use a locally provided protoc (in 1.x):
 PB.protocExecutable := file("/path/to/protoc")
 
-// In <1.0:
+// For sbt-protoc < 1.0 only:
 PB.runProtoc in Compile := (args => Process("/path/to/protoc", args)!)
 
 // Prevents the plugin from adding libraryDependencies to your project

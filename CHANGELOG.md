@@ -1,4 +1,12 @@
 # Changelog
+## [1.0.0-RC7]
+* don't inherit parent configs' values for targets/protocOptions (c9ed1c2)
+
+## [1.0.0-RC5]
+* `PB.runProtoc` has been changed to a `TaskKey[ProtocRunner]` which can customize how protoc is being invoked. The default implementation runs `PB.protocExecutable` which in turns downloads and caches protoc executable from Maven. The version can be controlled with `PB.protocVersion`. If you want to run a locally installed protoc, it is suggested to customize `PB.protocExecutable` directly. See also [ProtocRunner source](https://github.com/scalapb/protoc-bridge/blob/665309d2c05cc45752d3800592cf3f191c5f6a63/bridge/src/main/scala/protocbridge/ProtocRunner.scala).
+
+## [1.0.0-RC4]
+* Avoid unnecessary warnings by do not passing non-existant directories to protoc (#197)
 
 ## [1.0.0-RC3]
 * protoc executable is now cached under the user cache directory. The path
@@ -27,8 +35,8 @@
   by `protocExecutable`. Defaults to a protoc version matched by `PB.protocVersion`.
 * `PB.protocVersion` used to have a `-v` prefix. This is no longer required and a deprecation warning is issued.
 * `runProtoc` has been changed to a `TaskKey[Seq[String] => Int]`. The default implementation runs `protocExecutable`
-  with the provided arguments and returns it exit code. SBT's logging facilities are provided to the protoc process.
-* NixOS workarounds: if the environment variable `NIX_CC` is present, it is used to locate a dynamic linker (by reading `$NIX_CC/nix-support/dynamic-linker`). The located dynamic linker is used to run `protoc.exe` as well as downloaded native plugins, for seamless development experience in nix-shell. See #505.
+  with the provided arguments and returns it exit code. SBT's logging facilities are provided to the protoc process. Update: In 1.0.0-RC5, `PB.runProtoc` signature had changed again. See changelog entry above.
+* NixOS workarounds: if the environment variable `NIX_CC` is present (usally ormally provided by `nix-shell`), it is used to locate a dynamic linker (by reading `$NIX_CC/nix-support/dynamic-linker`). The located dynamic linker is used to run `protoc` as well as downloaded native plugins, for seamless development experience in nix-shell. See #505 and [shell.nix](https://github.com/thesamet/sbt-protoc/blob/master/shell.nix).
 * Deprecated and ignored setting key pythonExe has been removed.
 
 ## [0.99.31]
