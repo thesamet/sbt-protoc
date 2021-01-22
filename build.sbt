@@ -33,7 +33,7 @@ publishMavenStyle := false
 
 bintrayRepository := "sbt-plugins"
 
-bintrayOrganization in bintray := None
+bintray / bintrayOrganization := None
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,

@@ -32,8 +32,8 @@ libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.10.10"
 If you only want to generate Java code:
 
 ```scala
-PB.targets in Compile := Seq(
-  PB.gens.java -> (sourceManaged in Compile).value
+Compile / PB.targets := Seq(
+  PB.gens.java -> (Compile / sourceManaged).value
 )
 ```
 
@@ -41,23 +41,23 @@ A version of `protobuf-java` is going to get added to the runtime
 dependencies. To explicitly set this version you can write:
 
 ```scala
-PB.targets in Compile := Seq(
-  PB.gens.java("3.7.0") -> (sourceManaged in Compile).value
+Compile / PB.targets := Seq(
+  PB.gens.java("3.7.0") -> (Compile / sourceManaged).value
 )
 ```
 
 For ScalaPB:
 ```scala
-PB.targets in Compile := Seq(
-  scalapb.gen() -> (sourceManaged in Compile).value
+Compile / PB.targets := Seq(
+  scalapb.gen() -> (Compile / sourceManaged).value
 )
 ```
 
 To generate Java + Scala with Java conversions:
 ```scala
-PB.targets in Compile := Seq(
-  PB.gens.java -> (sourceManaged in Compile).value,
-  scalapb.gen(javaConversions = true) -> (sourceManaged in Compile).value
+Compile / PB.targets := Seq(
+  PB.gens.java -> (Compile / sourceManaged).value,
+  scalapb.gen(javaConversions = true) -> (Compile / sourceManaged).value
 )
 ```
 
@@ -82,8 +82,8 @@ To download an artifact and use it as a code generator plugin:
 ```scala
 libraryDependencies += "io.grpc" % "protoc-gen-grpc-java" % "1.23.0" asProtocPlugin()
 
-PB.targets in Compile := Seq(
-  PB.gens.plugin("grpc-java") -> (sourceManaged in Compile).value,
+Compile / PB.targets := Seq(
+  PB.gens.plugin("grpc-java") -> (Compile / sourceManaged).value,
 )
 ```
 
@@ -99,8 +99,8 @@ different pattern.
 
 ## To invoke a plugin that is already locally installed
 
-    PB.targets in Compile := Seq(
-      PB.gens.plugin(name="myplugin", path="/path/to/plugin") -> (sourceManaged in Compile).value / "js"
+    Compile / PB.targets := Seq(
+      PB.gens.plugin(name="myplugin", path="/path/to/plugin") -> (Compile / sourceManaged).value / "js"
     )
 
 If you need to pass parameters to the plugin, it can be done as follows:
@@ -110,8 +110,8 @@ If you need to pass parameters to the plugin, it can be done as follows:
       path="/usr/local/bin/protoc-gen-grpc-web-1.0.7-linux-x86_64"
     )
 
-    PB.targets in Compile := Seq(
-      (grpcWebGen, Seq("mode=grpcwebtext")) -> (sourceManaged in Compile).value / "js"
+    Compile / PB.targets := Seq(
+      (grpcWebGen, Seq("mode=grpcwebtext")) -> (Compile / sourceManaged).value / "js"
     )
 
 **Step 3: Put some protos in src/main/protobuf and compile**
@@ -128,7 +128,7 @@ Example settings:
 PB.protocVersion := "3.11.4"
 
 // Additional directories to search for imports:
-PB.includePaths in Compile ++= Seq(file("/some/other/path"))
+Compile / PB.includePaths ++= Seq(file("/some/other/path"))
 
 // Make protos from some Jar available to import.
 libraryDependencies ++= Seq(
@@ -145,20 +145,20 @@ libraryDependencies ++= Seq(
 )
 
 // Changing where to look for protos to compile (default src/main/protobuf):
-PB.protoSources in Compile := Seq(sourceDirectory.value / "somewhere")
+Compile / PB.protoSources := Seq(sourceDirectory.value / "somewhere")
 
 // Additional options to pass to protoc:
-PB.protocOptions in Compile := Seq("-xyz")
+Compile / PB.protocOptions := Seq("-xyz")
 
 // Excluding some proto files:
-excludeFilter in PB.generate := "test-*.proto"
+PB.generate / excludeFilter := "test-*.proto"
 
 // Rarely needed: override where proto files from library dependencies are
 // extracted to:
-PB.externalIncludePath in Compile := file("/tmp/foo")
+Compile / PB.externalIncludePath := file("/tmp/foo")
 
 // By default we generate into target/src_managed. To customize:
-PB.targets in Compile := Seq(
+Compile / PB.targets := Seq(
   scalapb.gen() -> file("/some/other/dir")
 )
 
@@ -166,7 +166,7 @@ PB.targets in Compile := Seq(
 PB.protocExecutable := file("/path/to/protoc")
 
 // For sbt-protoc < 1.0 only:
-PB.runProtoc in Compile := (args => Process("/path/to/protoc", args)!)
+Compile / PB.runProtoc := (args => Process("/path/to/protoc", args)!)
 
 // Prevents the plugin from adding libraryDependencies to your project
 PB.additionalDependencies := Nil
@@ -189,8 +189,8 @@ but not to your main code.
 
 To do that, add:
 
-    PB.targets in Test := Seq(
-        PB.gens.java("3.11.4") -> (sourceManaged in Test).value
+    Test / PB.targets := Seq(
+        PB.gens.java("3.11.4") -> (Test / sourceManaged).value
     )
 
 If you want to have protos in some other configuration (not `Compile` or
@@ -202,8 +202,8 @@ configs(IntegrationTest)
 
 inConfig(IntegrationTest)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
 
-PB.targets in IntegrationTest := Seq(
-    PB.gens.java("3.11.4") -> (sourceManaged in IntegrationTest).value
+IntegrationTest / PB.targets := Seq(
+    PB.gens.java("3.11.4") -> (IntegrationTest / sourceManaged).value
 )
 ```
 

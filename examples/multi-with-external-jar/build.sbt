@@ -7,8 +7,8 @@ lazy val externalProtos = (project in file("external-protos"))
       "com.thesamet.scalapb" %% "scalapb-runtime" % scalapbVersion % "protobuf"
     ),
 
-    PB.targets in Compile := Seq(
-      scalapb.gen() -> (sourceManaged in Compile).value
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value
     )
   )
 
@@ -17,7 +17,7 @@ lazy val externalProtos = (project in file("external-protos"))
 lazy val sub1 = (project in file("sub1"))
   .dependsOn(externalProtos)
   .settings(
-    PB.targets in Compile := Seq(
-      scalapb.gen() -> (sourceManaged in Compile).value
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value
     ),
   )

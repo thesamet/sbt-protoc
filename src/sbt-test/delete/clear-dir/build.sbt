@@ -1,1 +1,1 @@
-PB.targets in Compile := Seq(PB.gens.java -> (sourceManaged in Compile).value)
+Compile / PB.targets := Seq(PB.gens.java -> (Compile / sourceManaged).value)

@@ -19,10 +19,10 @@ lazy val googleCommonProtos = (project in file("google-common-protos"))
     // is going to contain protos from Google's standard protos.  
     // In order to avoid compiling things we don't use, we restrict what's
     // compiled to a subdirectory of protobuf_external
-    PB.protoSources in Compile += target.value / "protobuf_external" / "google" / "type",
+    Compile / PB.protoSources += target.value / "protobuf_external" / "google" / "type",
 
-    PB.targets in Compile := Seq(
-      scalapb.gen() -> (sourceManaged in Compile).value
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value
     )
   )
 
@@ -39,8 +39,8 @@ lazy val myProject = (project in file("my-project"))
       GrpcProtosArtifact % "protobuf"
     ),
 
-    PB.targets in Compile := Seq(
-      scalapb.gen() -> (sourceManaged in Compile).value
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value
     ),
 
   )

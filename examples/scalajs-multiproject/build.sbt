@@ -4,11 +4,11 @@ ThisBuild / scalaVersion := "2.13.3"
 
 lazy val proto = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("proto"))
   .settings(
-    PB.targets in Compile := Seq(
-      scalapb.gen() -> (sourceManaged in Compile).value
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value
     ),
     // The trick is in this line:
-    PB.protoSources in Compile := Seq(file("proto/src/main/protobuf")),
+    Compile / PB.protoSources := Seq(file("proto/src/main/protobuf")),
     libraryDependencies ++= Seq(
       "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion,
       "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
