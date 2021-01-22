@@ -1,0 +1,96 @@
+# Note that this scripted assumes that sbt-protoc uses "last modified" rather than a hash to
+# stamp input files. If this was to change, this would yield false negatives and we will  have
+# to find a more advanced instrumentation strategy.
+
+# verify that a second run of protocGenerate does not run protoc by land-mining the input file
+> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto false
+> api/protocGenerate
+
+# check cache invalidation on PB.protocOptions update
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto false
+> 'set api / Compile / PB.protocOptions += "--error_format=msvs"'
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on PB.deleteTargetDirectory update
+> setReadable api/src/main/protobuf/foo.proto true
+> 'set api / Compile / PB.deleteTargetDirectory := false'
+> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto false
+> 'set api / Compile / PB.deleteTargetDirectory := true'
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on source file update
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+$ touch api/src/main/protobuf/foo.proto
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on new/deleted source file
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+$ touch api/src/main/protobuf/new.proto
+> setReadable api/src/main/protobuf/new.proto false
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/new.proto true
+> api/protocGenerate
+$ delete api/src/main/protobuf/new.proto
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on new PB.includePath
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+$ mkdir newdir
+> 'set api / Compile / PB.includePaths += (ThisBuild / baseDirectory).value / "newdir"'
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on missing output
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+$ delete api/target/scala-2.12/src_managed/main/mypkg/Foo.java
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on new generator
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+> 'set api / Compile / PB.targets := Seq(PB.gens.java("3.11.0") -> (Compile / crossTarget).value / "src_managed_2")'
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on protoc-bridge published generator update
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+> reload plugins
+> 'set libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.10.10"'
+> reload return
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# caching can be disabled by setting PB.recompile
+> 'set api / Compile / PB.recompile := true'
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
