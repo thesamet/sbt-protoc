@@ -270,6 +270,11 @@ object ProtocPlugin extends AutoPlugin {
             )
             PB.protocVersion.value.substring(2)
           } else PB.protocVersion.value
+        if (version.indexOf('.') == -1) {
+          throw new IllegalArgumentException(
+            s"""PB.protocVersion must contain a dot-separated version number. For example: "3.13.0". Got: '${PB.protocVersion.value}'"""
+          )
+        }
         ("com.google.protobuf" % "protoc" % version) asProtocBinary (),
       },
       PB.protocExecutable := {
