@@ -10,12 +10,11 @@ meant to supersede
 Highlights
 ----------
 
-1. Uses protoc-jar by default (no need to install protoc)
-2. Generates source code directly under `src_managed` by default (works
+1. Generates source code directly under `src_managed` by default (works
    better with IntelliJ)
-3. Supports compiling protos in both `test` and `compile` configuration.
-4. Supports JVM-based code generators. [Write your own custom code generator.](https://github.com/thesamet/sbt-protoc/tree/master/examples/custom-gen)
-5. Straightforward: No `PB.protobufSettings`, packaged as auto-plugin.
+1. Supports compiling protos in both `test` and `compile` configuration.
+1. Supports JVM-based code generators. [Write your own custom code generator.](https://github.com/thesamet/sbt-protoc/tree/master/examples/custom-gen)
+1. Straightforward: No `PB.protobufSettings`, packaged as auto-plugin.
 
 Installation
 ------------
