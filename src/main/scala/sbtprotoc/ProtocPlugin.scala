@@ -161,12 +161,12 @@ object ProtocPlugin extends AutoPlugin {
       PB.protocVersion := "3.13.0",
       PB.deleteTargetDirectory := true,
       PB.cacheClassLoaders := true,
-      includeFilter in PB.generate := "*.proto",
-      dependencyResolution in PB.generate := {
+      PB.generate / includeFilter := "*.proto",
+      PB.generate / dependencyResolution := {
         val log = streams.value.log
 
         val rootDependencyResolution =
-          (dependencyResolution in LocalRootProject).?.value
+          (LocalRootProject / dependencyResolution).?.value
 
         rootDependencyResolution.getOrElse {
           log.warn(
@@ -189,7 +189,7 @@ object ProtocPlugin extends AutoPlugin {
       },
       PB.protocCache := {
         val log = streams.value.log
-        val lm  = (dependencyResolution in PB.generate).value
+        val lm  = (PB.generate / dependencyResolution).value
 
         def downloadArtifact(targetDirectory: File, moduleId: ModuleID): Future[File] =
           Future {
@@ -216,7 +216,7 @@ object ProtocPlugin extends AutoPlugin {
         )
       },
       PB.artifactResolver := artifactResolverImpl(
-        (dependencyResolution in PB.generate).value,
+        (PB.generate / dependencyResolution).value,
         streams.value.cacheDirectory / "sbt-protoc",
         streams.value.log
       )
@@ -232,7 +232,7 @@ object ProtocPlugin extends AutoPlugin {
       PB.externalSourcePath := target.value / "protobuf_external_src",
       PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
       PB.additionalDependencies := {
-        val libs = (PB.targets in Compile).value.flatMap(_.generator.suggestedDependencies)
+        val libs = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
         platformDepsCrossVersion.?.value match {
           case Some(c) =>
             libs.map { lib =>
@@ -247,18 +247,18 @@ object ProtocPlugin extends AutoPlugin {
         }
       },
       libraryDependencies ++= PB.additionalDependencies.value,
-      classpathTypes in ProtobufConfig += PB.ProtocPlugin,
-      managedClasspath in ProtobufConfig :=
+      ProtobufConfig / classpathTypes += PB.ProtocPlugin,
+      ProtobufConfig / managedClasspath :=
         Classpaths.managedJars(
           ProtobufConfig,
-          (classpathTypes in ProtobufConfig).value,
-          (update in ProtobufConfig).value
+          (ProtobufConfig / classpathTypes).value,
+          (ProtobufConfig / update).value
         ),
-      managedClasspath in ProtobufSrcConfig :=
+      ProtobufSrcConfig / managedClasspath :=
         Classpaths.managedJars(
           ProtobufSrcConfig,
-          (classpathTypes in ProtobufSrcConfig).value,
-          (update in ProtobufSrcConfig).value
+          (ProtobufSrcConfig / classpathTypes).value,
+          (ProtobufSrcConfig / update).value
         ),
       ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
       PB.protocDependency := {
@@ -481,9 +481,9 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
-      val toInclude = (includeFilter in key).value
-      val toExclude = (excludeFilter in key).value
-      val schemas = (PB.protoSources in key).value
+      val toInclude = (key / includeFilter).value
+      val toExclude = (key / excludeFilter).value
+      val schemas = (key / PB.protoSources).value
         .toSet[File]
         .flatMap(srcDir =>
           (srcDir ** (toInclude -- toExclude)).get
@@ -491,10 +491,10 @@ object ProtocPlugin extends AutoPlugin {
         )
       // Include Scala binary version like "_2.11" for cross building.
       val cacheFile =
-        (streams in key).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
+        (key / streams).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
 
       val nativePlugins =
-        (managedClasspath in (ProtobufConfig, key)).value.filter(isNativePlugin _)
+        (ProtobufConfig / key / managedClasspath).value.filter(isNativePlugin _)
 
       // Ensure all plugins are executable
       nativePlugins.foreach { dep => dep.data.setExecutable(true) }
@@ -517,8 +517,8 @@ object ProtocPlugin extends AutoPlugin {
 
       val classLoader: BridgeArtifact => ClassLoader =
         Def.task {
-          val resolver = (PB.artifactResolver in key).value
-          val cache    = (PB.cacheClassLoaders in key).value
+          val resolver = (key / PB.artifactResolver).value
+          val cache    = (key / PB.cacheClassLoaders).value
           (artifact: BridgeArtifact) =>
             if (!cache) sandboxedClassLoader(resolver)(artifact)
             else
@@ -527,13 +527,13 @@ object ProtocPlugin extends AutoPlugin {
 
       def compileProto(): Set[File] =
         compile(
-          (PB.runProtoc in key).value,
+          (key / PB.runProtoc).value,
           schemas,
-          (PB.includePaths in key).value,
-          (PB.protocOptions in key).value ++ nativePluginsArgs,
-          (PB.targets in key).value,
-          (PB.deleteTargetDirectory in key).value,
-          (streams in key).value.log,
+          (key / PB.includePaths).value,
+          (key / PB.protocOptions).value ++ nativePluginsArgs,
+          (key / PB.targets).value,
+          (key / PB.deleteTargetDirectory).value,
+          (key / streams).value.log,
           classLoader
         )
 
@@ -553,14 +553,14 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
       val extractedFiles = unpack(
-        (managedClasspath in (ProtobufConfig, key)).value.map(_.data),
-        (PB.externalIncludePath in key).value,
-        (streams in key).value
+        (ProtobufConfig / key / managedClasspath).value.map(_.data),
+        (key / PB.externalIncludePath).value,
+        (key / streams).value
       )
       val extractedSrcFiles = unpack(
-        (managedClasspath in (ProtobufSrcConfig, key)).value.map(_.data),
-        (PB.externalSourcePath in key).value,
-        (streams in key).value
+        (ProtobufSrcConfig / key / managedClasspath).value.map(_.data),
+        (key / PB.externalSourcePath).value,
+        (key / streams).value
       )
       UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
     }

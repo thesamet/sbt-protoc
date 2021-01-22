@@ -5,9 +5,9 @@ val sharedSettings = Seq(
   name         := "example",
   version      := "0.1.0",
   scalaVersion := "2.11.12",
-  PB.protoSources in Compile := Seq((baseDirectory in ThisBuild).value / "src"/ "main" / "protobuf"),
-  PB.targets in Compile := Seq(
-    scalapb.gen() -> (sourceManaged in Compile).value / "protos",
+  Compile / PB.protoSources := Seq((ThisBuild / baseDirectory).value / "src"/ "main" / "protobuf"),
+  Compile / PB.targets := Seq(
+    scalapb.gen() -> (Compile / sourceManaged).value / "protos",
   ),
   libraryDependencies += "com.thesamet.scalapb" %%% "scalapb-runtime" % scalapbVersion,
   scalaJSUseMainModuleInitializer := true,

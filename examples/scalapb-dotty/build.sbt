@@ -1,3 +1,3 @@
 scalaVersion := "3.0.0-M1"
 
-PB.targets in Compile := Seq(scalapb.gen() -> (sourceManaged in Compile).value / "scalapb")
+Compile / PB.targets := Seq(scalapb.gen() -> (Compile / sourceManaged).value / "scalapb")

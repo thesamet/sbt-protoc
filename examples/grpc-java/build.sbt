@@ -2,9 +2,9 @@ val grpcJavaVersion = "1.23.0"
 
 libraryDependencies += ("io.grpc" % "protoc-gen-grpc-java" % "1.19.0") asProtocPlugin()
 
-PB.targets in Compile := Seq(
-  PB.gens.java -> (sourceManaged in Compile).value,
-  PB.gens.plugin("grpc-java") -> (sourceManaged in Compile).value,
+Compile / PB.targets := Seq(
+  PB.gens.java -> (Compile / sourceManaged).value,
+  PB.gens.plugin("grpc-java") -> (Compile / sourceManaged).value,
 )
 
 libraryDependencies ++= Seq(

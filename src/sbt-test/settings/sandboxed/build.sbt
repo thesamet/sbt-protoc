@@ -14,6 +14,6 @@ val scalaGen = SandboxedJvmGenerator.forModule(
   )
 )
 
-PB.targets in Compile := Seq(scalaGen -> (sourceManaged in Compile).value)
+Compile / PB.targets := Seq(scalaGen -> (Compile / sourceManaged).value)
 
 libraryDependencies += "com.google.protobuf" % "protobuf-java" % "3.8.0" % "protobuf"
