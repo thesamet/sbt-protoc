@@ -33,7 +33,7 @@
   You can override this task to return a locally installed protoc.
 * New setting: `protocDependency: SettingKey[ModuleID]` - provides a maven artifact to be downloaded
   by `protocExecutable`. Defaults to a protoc version matched by `PB.protocVersion`.
-* `PB.protocVersion` used to have a `-v` prefix. This is no longer required and a deprecation warning is issued.
+* `PB.protocVersion` used to have a `-v` prefix. This is no longer required and a deprecation warning is issued. The version number is expected to be in x.y.z format (protocjar accepted a format without dots which is no longer supported).
 * `runProtoc` has been changed to a `TaskKey[Seq[String] => Int]`. The default implementation runs `protocExecutable`
   with the provided arguments and returns it exit code. SBT's logging facilities are provided to the protoc process. Update: In 1.0.0-RC5, `PB.runProtoc` signature had changed again. See changelog entry above.
 * NixOS workarounds: if the environment variable `NIX_CC` is present (usally ormally provided by `nix-shell`), it is used to locate a dynamic linker (by reading `$NIX_CC/nix-support/dynamic-linker`). The located dynamic linker is used to run `protoc` as well as downloaded native plugins, for seamless development experience in nix-shell. See #505 and [shell.nix](https://github.com/thesamet/sbt-protoc/blob/master/shell.nix).

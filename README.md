@@ -116,6 +116,24 @@ If you need to pass parameters to the plugin, it can be done as follows:
 
 **Step 3: Put some protos in src/main/protobuf and compile**
 
+Migration notes to 1.0.0
+------------------------
+
+These notes are for those migrating from sbt-protoc < 1.0.0. 
+
+* `PB.protocVersion` now accepts a version in `x.y.z` format (for example, `3.13.0`). Previously,
+  this key accepted protoc-jar style version flags such as `-v361`. Version 1.0.x of ScalaPB will
+  strip out the `-v` part (a behavior that will be deprecated later), however
+  it does not take version numbers without dot seperators.
+* Use `PB.protocExecutable` to use a locally installed `protoc`. By default
+  this key downloads and caches `protoc` from Maven.
+* If you previously used protoc-jar's option `--include_std_types`, see
+  Installation instructions above, and look for "To make standard google.protobuf types available to import"
+* Use `PB.protocRun` to have more control on how sbt-protoc invokes protoc (By
+  default, it run `PB.protocExecutable`.
+
+See [CHANGELOG.md](https://github.com/thesamet/sbt-protoc/blob/master/CHANGELOG.md) for more details.
+
 Additional options
 ------------------
 
