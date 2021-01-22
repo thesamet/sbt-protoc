@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package mypkg;
+
+import "google/protobuf/timestamp.proto";
+
+message Bar {
+  google.protobuf.Timestamp time = 1;
+}
