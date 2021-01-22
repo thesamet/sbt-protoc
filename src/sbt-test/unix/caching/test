@@ -1,0 +1,96 @@
+# Note that this scripted assumes that sbt-protoc uses "last modified" rather than a hash to
+# stamp input files. If this was to change, this would yield false negatives and we will  have
+# to find a more advanced instrumentation strategy.
+
+# verify that a second run of protocGenerate does not run protoc by land-mining the input file
+> protocGenerate
+> setReadable src/main/protobuf/foo.proto false
+> protocGenerate
+
+# check cache invalidation on PB.protocOptions update
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+> setReadable src/main/protobuf/foo.proto false
+> 'set Compile / PB.protocOptions += "--error_format=msvs"'
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# check cache invalidation on PB.deleteTargetDirectory update
+> setReadable src/main/protobuf/foo.proto true
+> 'set Compile / PB.deleteTargetDirectory := false'
+> protocGenerate
+> setReadable src/main/protobuf/foo.proto false
+> 'set Compile / PB.deleteTargetDirectory := true'
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# check cache invalidation on source file update
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+$ touch src/main/protobuf/foo.proto
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# check cache invalidation on new/deleted source file
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+$ touch src/main/protobuf/new.proto
+> setReadable src/main/protobuf/new.proto false
+-> protocGenerate
+> setReadable src/main/protobuf/new.proto true
+> protocGenerate
+$ delete src/main/protobuf/new.proto
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# check cache invalidation on new PB.includePath
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+$ mkdir newdir
+> 'set Compile / PB.includePaths += (ThisBuild / baseDirectory).value / "newdir"'
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# check cache invalidation on missing output
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+$ delete target/scala-2.12/src_managed/main/mypkg/Foo.java
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# check cache invalidation on new generator
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+> 'set Compile / PB.targets := Seq(PB.gens.java("3.11.0") -> (Compile / crossTarget).value / "src_managed_2")'
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# check cache invalidation on protoc-bridge published generator update
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+> reload plugins
+> 'set libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % "0.10.10"'
+> reload return
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
+# caching can be disabled by setting PB.recompile
+> 'set Compile / PB.recompile := true'
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
