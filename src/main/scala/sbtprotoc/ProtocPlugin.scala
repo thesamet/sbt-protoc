@@ -123,9 +123,6 @@ object ProtocPlugin extends AutoPlugin {
       protocbridge.ProtocRunner.fromFunction((args, extraEnv) => f(args))
   }
 
-  // internal key for detect change options
-  private[this] val arguments = TaskKey[Arguments]("protoc-arguments")
-
   private[sbtprotoc] final case class Arguments(
       includePaths: Seq[File],
       protocOptions: Seq[String],
@@ -288,22 +285,7 @@ object ProtocPlugin extends AutoPlugin {
   // Settings that are applied at configuration (Compile, Test) scope.
   val protobufConfigSettings: Seq[Setting[_]] =
     Seq(
-      arguments := Arguments(
-        includePaths = PB.includePaths.value,
-        protocOptions = PB.protocOptions.value,
-        deleteTargetDirectory = PB.deleteTargetDirectory.value,
-        targets = PB.targets.value.map { target =>
-          (
-            target.generator.name,
-            target.generator.suggestedDependencies,
-            target.outputPath,
-            target.options
-          )
-        }
-      ),
-      PB.recompile := {
-        arguments.previous.exists(_ != arguments.value)
-      },
+      PB.recompile := false,
       PB.protocOptions := Nil,
       PB.targets := Nil,
       PB.protoSources := Nil,
@@ -530,28 +512,49 @@ object ProtocPlugin extends AutoPlugin {
               classloaderCache.getOrElseUpdate(artifact, sandboxedClassLoader(resolver)(artifact))
         }.value
 
+      val arguments = Arguments(
+        PB.includePaths.value,
+        protocOptions = PB.protocOptions.value ++ nativePluginsArgs,
+        deleteTargetDirectory = PB.deleteTargetDirectory.value,
+        targets = PB.targets.value.map { target =>
+          (
+            target.generator.name,
+            target.generator.suggestedDependencies,
+            target.outputPath,
+            target.options
+          )
+        }
+      )
+
       def compileProto(): Set[File] =
         compile(
           (key / PB.runProtoc).value,
           schemas,
-          (key / PB.includePaths).value,
-          (key / PB.protocOptions).value ++ nativePluginsArgs,
+          arguments.includePaths,
+          arguments.protocOptions,
           (key / PB.targets).value,
-          (key / PB.deleteTargetDirectory).value,
+          arguments.deleteTargetDirectory,
           (key / streams).value.log,
           classLoader
         )
 
-      val cachedCompile = FileFunction.cached(
-        cacheFile,
-        inStyle = FilesInfo.lastModified,
-        outStyle = FilesInfo.exists
-      ) { (in: Set[File]) => compileProto() }
+      import CacheImplicits._
+      val cachedCompile = Tracked.inputChanged[(Arguments, FilesInfo[ModifiedFileInfo]), Set[File]](
+        cacheFile / "input"
+      ) { case (inChanged, _) =>
+        Tracked.diffOutputs(
+          cacheFile / "output",
+          FileInfo.exists
+        ) { outDiff: ChangeReport[File] =>
+          if (inChanged || outDiff.modified.nonEmpty) compileProto()
+          else outDiff.checked
+        }
+      }
 
       if (PB.recompile.value) {
         compileProto().toSeq
       } else {
-        cachedCompile(schemas).toSeq
+        cachedCompile((arguments, FileInfo.lastModified(schemas))).toSeq
       }
     }
 

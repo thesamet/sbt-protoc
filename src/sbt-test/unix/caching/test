@@ -13,6 +13,7 @@
 > setReadable src/main/protobuf/foo.proto false
 > 'set Compile / PB.protocOptions += "--error_format=msvs"'
 -> protocGenerate
+-> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
 
@@ -23,6 +24,7 @@
 > setReadable src/main/protobuf/foo.proto false
 > 'set Compile / PB.deleteTargetDirectory := true'
 -> protocGenerate
+-> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
 
@@ -31,6 +33,7 @@
 > protocGenerate
 $ touch src/main/protobuf/foo.proto
 > setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
 -> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
@@ -41,10 +44,12 @@ $ touch src/main/protobuf/foo.proto
 $ touch src/main/protobuf/new.proto
 > setReadable src/main/protobuf/new.proto false
 -> protocGenerate
+-> protocGenerate
 > setReadable src/main/protobuf/new.proto true
 > protocGenerate
 $ delete src/main/protobuf/new.proto
 > setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
 -> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
@@ -56,6 +61,7 @@ $ mkdir newdir
 > 'set Compile / PB.includePaths += (ThisBuild / baseDirectory).value / "newdir"'
 > setReadable src/main/protobuf/foo.proto false
 -> protocGenerate
+-> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
 
@@ -65,6 +71,7 @@ $ mkdir newdir
 $ delete target/scala-2.12/src_managed/main/mypkg/Foo.java
 > setReadable src/main/protobuf/foo.proto false
 -> protocGenerate
+-> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
 
@@ -73,6 +80,7 @@ $ delete target/scala-2.12/src_managed/main/mypkg/Foo.java
 > protocGenerate
 > 'set Compile / PB.targets := Seq(PB.gens.java("3.11.0") -> (Compile / crossTarget).value / "src_managed_2")'
 > setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
 -> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
@@ -85,6 +93,7 @@ $ delete target/scala-2.12/src_managed/main/mypkg/Foo.java
 > reload return
 > setReadable src/main/protobuf/foo.proto false
 -> protocGenerate
+-> protocGenerate
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
 
@@ -93,4 +102,5 @@ $ delete target/scala-2.12/src_managed/main/mypkg/Foo.java
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
 > setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
 -> protocGenerate
