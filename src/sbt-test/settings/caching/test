@@ -85,6 +85,22 @@ $ mkdir newdir
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 
+# check cache invalidation on new/deleted libraryDependencies for protobuf ivy config
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+> 'set api / libraryDependencies += "io.envoyproxy.protoc-gen-validate" % "pgv-java-stub" % "0.4.1" % "protobuf"'
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+> 'set api / libraryDependencies -= "io.envoyproxy.protoc-gen-validate" % "pgv-java-stub" % "0.4.1" % "protobuf"'
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
 # check cache invalidation on missing output
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
