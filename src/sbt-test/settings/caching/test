@@ -143,6 +143,16 @@ $ delete api/target/scala-2.12/src_managed/main/mypkg/Foo.java
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 
+# check cache invalidation on protoc-bridge local generator update
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+$ copy-file LocalGen2.scala codegen/src/main/scala/codegen/LocalGen.scala
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
 # caching can be disabled by setting PB.recompile
 > 'set api / Compile / PB.recompile := true'
 > setReadable api/src/main/protobuf/foo.proto true
