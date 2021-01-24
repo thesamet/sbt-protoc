@@ -13,6 +13,7 @@
 > setReadable api/src/main/protobuf/foo.proto false
 > 'set api / Compile / PB.protocOptions += "--error_format=msvs"'
 -> api/protocGenerate
+-> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 
@@ -23,6 +24,7 @@
 > setReadable api/src/main/protobuf/foo.proto false
 > 'set api / Compile / PB.deleteTargetDirectory := true'
 -> api/protocGenerate
+-> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 
@@ -31,6 +33,7 @@
 > api/protocGenerate
 $ touch api/src/main/protobuf/foo.proto
 > setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
 -> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
@@ -41,10 +44,12 @@ $ touch api/src/main/protobuf/foo.proto
 $ touch api/src/main/protobuf/new.proto
 > setReadable api/src/main/protobuf/new.proto false
 -> api/protocGenerate
+-> api/protocGenerate
 > setReadable api/src/main/protobuf/new.proto true
 > api/protocGenerate
 $ delete api/src/main/protobuf/new.proto
 > setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
 -> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
@@ -56,6 +61,17 @@ $ mkdir newdir
 > 'set api / Compile / PB.includePaths += (ThisBuild / baseDirectory).value / "newdir"'
 > setReadable api/src/main/protobuf/foo.proto false
 -> api/protocGenerate
+-> api/protocGenerate
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+
+# check cache invalidation on updated asProtocPlugin libraryDependencies
+> setReadable api/src/main/protobuf/foo.proto true
+> api/protocGenerate
+> 'set api / libraryDependencies ~= { _.map { dep => if (dep.name == "protoc-gen-validate") dep.withRevision("0.4.1") else dep } },'
+> setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
+-> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 
@@ -65,6 +81,7 @@ $ mkdir newdir
 $ delete api/target/scala-2.12/src_managed/main/mypkg/Foo.java
 > setReadable api/src/main/protobuf/foo.proto false
 -> api/protocGenerate
+-> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 
@@ -73,6 +90,7 @@ $ delete api/target/scala-2.12/src_managed/main/mypkg/Foo.java
 > api/protocGenerate
 > 'set api / Compile / PB.targets := Seq(PB.gens.java("3.11.0") -> (Compile / crossTarget).value / "src_managed_2")'
 > setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
 -> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
@@ -85,6 +103,7 @@ $ delete api/target/scala-2.12/src_managed/main/mypkg/Foo.java
 > reload return
 > setReadable api/src/main/protobuf/foo.proto false
 -> api/protocGenerate
+-> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 
@@ -93,4 +112,5 @@ $ delete api/target/scala-2.12/src_managed/main/mypkg/Foo.java
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto false
+-> api/protocGenerate
 -> api/protocGenerate
