@@ -1,7 +1,7 @@
 import java.nio.file.Files
 import java.nio.file.attribute._
 import scala.jdk.CollectionConverters._
-import protocbridge.Target
+import protocbridge.{SandboxedJvmGenerator, Target}
 
 /** Update the attributes of the file passed as an argument to make it readable or not for the current user,
   * without updating the "last modified" attribute nor changing the content of the file.
@@ -26,15 +26,35 @@ setReadable := {
   } else file.setReadable(readable)
 }
 
+val DummyArtifact = protocbridge.Artifact("DummyGroup", "DummyArtifact", "DummyVersion")
+val localGen      = SandboxedJvmGenerator.forModule("LocalGen", DummyArtifact, "codegen.LocalGen$", Nil)
+
 lazy val api = (project in file("api"))
   .settings(
     Compile / PB.targets := Seq(
       PB.gens.java -> (Compile / sourceManaged).value,
       Target(PB.gens.plugin("validate"), (Compile / sourceManaged).value, Seq("lang=java")),
-      scalapb.gen() -> (Compile / sourceManaged).value
+      scalapb.gen() -> (Compile / sourceManaged).value,
+      localGen      -> (Compile / sourceManaged).value
     ),
     PB.additionalDependencies ++= Seq(
       "com.google.protobuf"                % "protobuf-java"       % "3.13.0" % "protobuf",
       ("io.envoyproxy.protoc-gen-validate" % "protoc-gen-validate" % "0.4.0").asProtocPlugin
-    )
+    ),
+    PB.artifactResolver := {
+      val oldResolver = PB.artifactResolver.value
+      val cp          = (codegen / Compile / fullClasspath).value.map(_.data)
+      (a: protocbridge.Artifact) =>
+        a match {
+          case DummyArtifact => cp
+          case other         => oldResolver(other)
+        }
+    },
+    PB.cacheClassLoaders := false
+  )
+
+lazy val codegen = (project in file("codegen"))
+  .settings(
+    scalaVersion := scala.util.Properties.versionNumberString,
+    libraryDependencies += "com.thesamet.scalapb" %% "compilerplugin" % scalapb.compiler.Version.scalapbVersion
   )

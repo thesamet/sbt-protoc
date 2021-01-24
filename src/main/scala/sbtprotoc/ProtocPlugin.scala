@@ -4,7 +4,7 @@ import sbt._
 import Keys._
 import java.io.File
 
-import protocbridge.{DescriptorSetGenerator, Target, ProtocRunner}
+import protocbridge.{DescriptorSetGenerator, SandboxedJvmGenerator, Target, ProtocRunner}
 import sbt.librarymanagement.{CrossVersion, ModuleID}
 import sbt.plugins.JvmPlugin
 import sbt.util.CacheImplicits
@@ -570,11 +570,17 @@ object ProtocPlugin extends AutoPlugin {
         }
       }
 
+      val resolver = (key / PB.artifactResolver).value
       if (PB.recompile.value) {
         log.debug("Ignoring cache (PB.recompile := true)")
         compileProto().toSeq
       } else {
-        val input = schemas ++ arguments.includePaths.allPaths.get
+        val sandboxedArtifactsClasspath =
+          targets
+            .map(_.generator)
+            .collect { case SandboxedJvmGenerator(_, artifact, _, _) => artifact }
+            .flatMap(resolver(_).allPaths.get) // artifact paths can be JARs or directories
+        val input = schemas ++ arguments.includePaths.allPaths.get ++ sandboxedArtifactsClasspath
         cachedCompile((arguments, FileInfo.lastModified(input))).toSeq
       }
     }
