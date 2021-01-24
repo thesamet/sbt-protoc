@@ -14,7 +14,6 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformD
 import java.net.URLClassLoader
 import sbt.librarymanagement.DependencyResolution
 import protocbridge.{Artifact => BridgeArtifact}
-import collection.concurrent
 import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache}
 import scala.concurrent.{Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -78,9 +77,18 @@ object ProtocPlugin extends AutoPlugin {
 
       val protocCache = TaskKey[FileCache[ModuleID]]("protoc-cache", "Cache of protoc executables")
 
+      val cacheArtifactResolution = SettingKey[Boolean](
+        "cache-artifact-resolution",
+        "If false, all sandboxed generators will be re-resolved on each invocation. This is useful when a custom PB.artifactResolver returns different files on each invocation."
+      )
+
+      @deprecated(
+        "Classloaders are now properly invalidated on classpath changes, consider PB.cacheArtifactResolution if you still need to override the default behavior",
+        "1.0.1"
+      )
       val cacheClassLoaders = SettingKey[Boolean](
         "cache-classloaders",
-        "If false, all sandboxed generators will be reloaded on each invocation. This can be useful when testing a code generators and the same artifact is expected to change."
+        "If false, has the same effect as PB.cacheArtifactResolution := false"
       )
 
       val deleteTargetDirectory = SettingKey[Boolean](
@@ -158,6 +166,7 @@ object ProtocPlugin extends AutoPlugin {
     Seq(
       PB.protocVersion := "3.13.0",
       PB.deleteTargetDirectory := true,
+      PB.cacheArtifactResolution := true,
       PB.cacheClassLoaders := true,
       PB.generate / includeFilter := "*.proto",
       PB.generate / dependencyResolution := {
@@ -382,12 +391,9 @@ object ProtocPlugin extends AutoPlugin {
         )
     }
 
-  private[this] def sandboxedClassLoader(
-      resolver: BridgeArtifact => Seq[File]
-  )(artifact: BridgeArtifact): ClassLoader = {
-    val urls = resolver(artifact).map(_.toURI().toURL()).toArray
+  private[this] def sandboxedClassLoader(files: Seq[File]): ClassLoader = {
     val cloader = new URLClassLoader(
-      urls,
+      files.map(_.toURI().toURL()).toArray,
       new FilteringClassLoader(getClass().getClassLoader())
     )
     cloader
@@ -470,7 +476,11 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def isNativePlugin(dep: Attributed[File]): Boolean =
     dep.get(artifact.key).exists(_.`type` == PB.ProtocPlugin)
 
-  private[this] val classloaderCache = concurrent.TrieMap.empty[BridgeArtifact, ClassLoader]
+  private[this] val classloaderCache =
+    new java.util.concurrent.ConcurrentHashMap[
+      BridgeArtifact,
+      (FilesInfo[ModifiedFileInfo], ClassLoader)
+    ]
 
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
@@ -511,12 +521,37 @@ object ProtocPlugin extends AutoPlugin {
 
       val classLoader: BridgeArtifact => ClassLoader =
         Def.task {
+          val log      = (key / streams).value.log
           val resolver = (key / PB.artifactResolver).value
-          val cache    = (key / PB.cacheClassLoaders).value
+          val cache    = (key / PB.cacheClassLoaders).value || (key / PB.cacheArtifactResolution).value
           (artifact: BridgeArtifact) =>
-            if (!cache) sandboxedClassLoader(resolver)(artifact)
-            else
-              classloaderCache.getOrElseUpdate(artifact, sandboxedClassLoader(resolver)(artifact))
+            val (_, classloader) =
+              classloaderCache
+                .compute(
+                  artifact,
+                  { (_, prevValue) =>
+                    def stampClasspath(files: Set[File]) =
+                      FileInfo.lastModified(files.allPaths.get.toSet)
+
+                    lazy val resolved = resolver(artifact)
+
+                    if (prevValue == null) {
+                      (stampClasspath(resolved.toSet), sandboxedClassLoader(resolved))
+                    } else {
+                      val prevFilesInfo = prevValue._1
+                      val newFiles =
+                        if (!cache) resolved.toSet
+                        else prevFilesInfo.files.map(_.file)
+                      val newFilesInfo = stampClasspath(newFiles)
+                      if (newFilesInfo == prevFilesInfo) prevValue
+                      else {
+                        log.debug(s"Reloading classloader for $artifact (classpath was updated)")
+                        (newFilesInfo, sandboxedClassLoader(resolved))
+                      }
+                    }
+                  }
+                )
+            classloader
         }.value
 
       val targets = (key / PB.targets).value
