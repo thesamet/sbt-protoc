@@ -49,8 +49,7 @@ lazy val api = (project in file("api"))
           case DummyArtifact => cp
           case other         => oldResolver(other)
         }
-    },
-    PB.cacheClassLoaders := false
+    }
   )
 
 lazy val codegen = (project in file("codegen"))
