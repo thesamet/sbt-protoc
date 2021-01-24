@@ -333,6 +333,11 @@ object ProtocPlugin extends AutoPlugin {
     def files: Seq[File] = mappedFiles.values.flatten.toSeq
   }
 
+  private[sbtprotoc] object UnpackedDependencies extends CacheImplicits {
+    implicit val UnpackedDependenciesFmat: JsonFormat[UnpackedDependencies] =
+      caseClassArray(UnpackedDependencies.apply _, UnpackedDependencies.unapply _)
+  }
+
   private[this] def artifactResolverImpl(
       lm: DependencyResolution,
       cacheDirectory: File,
@@ -571,7 +576,13 @@ object ProtocPlugin extends AutoPlugin {
         (key / PB.externalSourcePath).value,
         (key / streams).value
       )
-      UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
+      val unpackedDeps = UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
+
+      // clean up stale files that are no longer pulled by a dependency
+      val previouslyExtractedFiles = key.previous.map(_.files).toSeq.flatten
+      IO.delete(previouslyExtractedFiles.diff(unpackedDeps.files))
+
+      unpackedDeps
     }
 
   def protocIncludeDependencies: Def.Initialize[Seq[File]] =
