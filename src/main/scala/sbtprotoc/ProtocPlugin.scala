@@ -554,7 +554,8 @@ object ProtocPlugin extends AutoPlugin {
       if (PB.recompile.value) {
         compileProto().toSeq
       } else {
-        cachedCompile((arguments, FileInfo.lastModified(schemas))).toSeq
+        val input = schemas ++ arguments.includePaths.allPaths.get
+        cachedCompile((arguments, FileInfo.lastModified(input))).toSeq
       }
     }
 

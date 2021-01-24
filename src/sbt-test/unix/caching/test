@@ -65,6 +65,16 @@ $ mkdir newdir
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
 
+# check cache invalidation on updated libraryDependencies for protobuf ivy config
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+> 'set PB.additionalDependencies := Seq("com.google.protobuf" % "protobuf-java" % "3.14.0" % "protobuf")'
+> setReadable src/main/protobuf/foo.proto false
+-> protocGenerate
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
 # check cache invalidation on missing output
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
