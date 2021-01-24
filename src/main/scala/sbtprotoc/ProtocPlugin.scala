@@ -567,7 +567,8 @@ object ProtocPlugin extends AutoPlugin {
         log.debug("Ignoring cache (PB.recompile := true)")
         compileProto().toSeq
       } else {
-        cachedCompile((arguments, FileInfo.lastModified(schemas))).toSeq
+        val input = schemas ++ arguments.includePaths.allPaths.get
+        cachedCompile((arguments, FileInfo.lastModified(input))).toSeq
       }
     }
 
