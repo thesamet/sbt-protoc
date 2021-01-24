@@ -124,6 +124,7 @@ object ProtocPlugin extends AutoPlugin {
   }
 
   private[sbtprotoc] final case class Arguments(
+      protocVersion: String,
       includePaths: Seq[File],
       protocOptions: Seq[String],
       deleteTargetDirectory: Boolean,
@@ -518,6 +519,7 @@ object ProtocPlugin extends AutoPlugin {
         }.value
 
       val arguments = Arguments(
+        PB.protocVersion.value,
         PB.includePaths.value,
         protocOptions = PB.protocOptions.value ++ nativePluginsArgs,
         deleteTargetDirectory = PB.deleteTargetDirectory.value,

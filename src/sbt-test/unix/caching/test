@@ -7,6 +7,16 @@
 > setReadable src/main/protobuf/foo.proto false
 > protocGenerate
 
+# check cache invalidation on PB.protocVersion update
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+> setReadable src/main/protobuf/foo.proto false
+> 'set PB.protocVersion := "3.12.0"'
+-> protocGenerate
+-> protocGenerate
+> setReadable src/main/protobuf/foo.proto true
+> protocGenerate
+
 # check cache invalidation on PB.protocOptions update
 > setReadable src/main/protobuf/foo.proto true
 > protocGenerate
