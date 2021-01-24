@@ -123,9 +123,6 @@ object ProtocPlugin extends AutoPlugin {
       protocbridge.ProtocRunner.fromFunction((args, extraEnv) => f(args))
   }
 
-  // internal key for detect change options
-  private[this] val arguments = TaskKey[Arguments]("protoc-arguments")
-
   private[sbtprotoc] final case class Arguments(
       includePaths: Seq[File],
       protocOptions: Seq[String],
@@ -288,22 +285,7 @@ object ProtocPlugin extends AutoPlugin {
   // Settings that are applied at configuration (Compile, Test) scope.
   val protobufConfigSettings: Seq[Setting[_]] =
     Seq(
-      arguments := Arguments(
-        includePaths = PB.includePaths.value,
-        protocOptions = PB.protocOptions.value,
-        deleteTargetDirectory = PB.deleteTargetDirectory.value,
-        targets = PB.targets.value.map { target =>
-          (
-            target.generator.name,
-            target.generator.suggestedDependencies,
-            target.outputPath,
-            target.options
-          )
-        }
-      ),
-      PB.recompile := {
-        arguments.previous.exists(_ != arguments.value)
-      },
+      PB.recompile := false,
       PB.protocOptions := Nil,
       PB.targets := Nil,
       PB.protoSources := Nil,
@@ -486,6 +468,7 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
+      val log       = (key / streams).value.log
       val toInclude = (key / includeFilter).value
       val toExclude = (key / excludeFilter).value
       val schemas = (key / PB.protoSources).value
@@ -530,28 +513,61 @@ object ProtocPlugin extends AutoPlugin {
               classloaderCache.getOrElseUpdate(artifact, sandboxedClassLoader(resolver)(artifact))
         }.value
 
+      val targets = (key / PB.targets).value
+      val arguments = Arguments(
+        (key / PB.includePaths).value,
+        protocOptions = (key / PB.protocOptions).value ++ nativePluginsArgs,
+        deleteTargetDirectory = (key / PB.deleteTargetDirectory).value,
+        targets = targets.map { target =>
+          (
+            target.generator.name,
+            target.generator.suggestedDependencies,
+            target.outputPath,
+            target.options
+          )
+        }
+      )
+
       def compileProto(): Set[File] =
         compile(
           (key / PB.runProtoc).value,
           schemas,
-          (key / PB.includePaths).value,
-          (key / PB.protocOptions).value ++ nativePluginsArgs,
-          (key / PB.targets).value,
-          (key / PB.deleteTargetDirectory).value,
-          (key / streams).value.log,
+          arguments.includePaths,
+          arguments.protocOptions,
+          targets,
+          arguments.deleteTargetDirectory,
+          log,
           classLoader
         )
 
-      val cachedCompile = FileFunction.cached(
-        cacheFile,
-        inStyle = FilesInfo.lastModified,
-        outStyle = FilesInfo.exists
-      ) { (in: Set[File]) => compileProto() }
+      import CacheImplicits._
+      val cachedCompile = Tracked.inputChanged[(Arguments, FilesInfo[ModifiedFileInfo]), Set[File]](
+        cacheFile / "input"
+      ) { case (inChanged, _) =>
+        Tracked.diffOutputs(
+          cacheFile / "output",
+          FileInfo.exists
+        ) { outDiff: ChangeReport[File] =>
+          if (inChanged || outDiff.modified.nonEmpty) {
+            log.debug {
+              val inputInvalidation =
+                if (inChanged) Seq("input changed")
+                else Seq()
+              val outputInvalidation =
+                if (outDiff.modified.nonEmpty) Seq(s"output files changed ${outDiff.modified}")
+                else Seq()
+              s"Invalidating cache (${(inputInvalidation ++ outputInvalidation).mkString(" and ")})"
+            }
+            compileProto()
+          } else outDiff.checked
+        }
+      }
 
       if (PB.recompile.value) {
+        log.debug("Ignoring cache (PB.recompile := true)")
         compileProto().toSeq
       } else {
-        cachedCompile(schemas).toSeq
+        cachedCompile((arguments, FileInfo.lastModified(schemas))).toSeq
       }
     }
 
