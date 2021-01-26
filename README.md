@@ -116,10 +116,16 @@ If you need to pass parameters to the plugin, it can be done as follows:
 
 **Step 3: Put some protos in src/main/protobuf and compile**
 
-Migration notes to 1.0.0
-------------------------
+Migration notes
+---------------
 
-These notes are for those migrating from sbt-protoc < 1.0.0. 
+#### From sbt-protoc 1.0.0 to 1.0.1
+
+* Protos imported with "protobuf-src" are now compiled only once per project, in the `Compile` configuration.
+  Use `Test / PB.protoSources += PB.externalSourcePath.value` to trigger compilation also in `Test` (the
+  previous behavior).
+
+#### From sbt-protoc < 1.0.0 to 1.0.0
 
 * `PB.protocVersion` now accepts a version in `x.y.z` format (for example, `3.13.0`). Previously,
   this key accepted protoc-jar style version flags such as `-v361`. Version 1.0.x of ScalaPB will
