@@ -223,13 +223,14 @@ object ProtocPlugin extends AutoPlugin {
     )
 
   override def projectSettings: Seq[Def.Setting[_]] =
-    protobufProjectSettings ++ inConfig(Compile)(protobufConfigSettings) ++
-      inConfig(Test)(protobufConfigSettings)
+    Seq(Compile, Test).flatMap(inConfig(_)(protobufConfigSettings)) ++
+      protobufProjectSettings
 
   private[this] val protobufProjectSettings: Seq[Def.Setting[_]] =
     Seq(
       PB.externalIncludePath := target.value / "protobuf_external",
       PB.externalSourcePath := target.value / "protobuf_external_src",
+      Compile / PB.protoSources += PB.externalSourcePath.value,
       PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
       PB.additionalDependencies := {
         val libs = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
@@ -308,12 +309,11 @@ object ProtocPlugin extends AutoPlugin {
       PB.targets := Nil,
       PB.protoSources := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
-      PB.protoSources += PB.externalSourcePath.value,
       PB.includePaths := (
         PB.includePaths.?.value.getOrElse(Nil) ++
           PB.protoSources.value ++
-          protocIncludeDependencies.value :+
-          PB.externalIncludePath.value,
+          protocIncludeDependencies.value ++
+          Seq(PB.externalIncludePath.value, PB.externalSourcePath.value),
       ).distinct,
       PB.generate := sourceGeneratorTask(PB.generate)
         .dependsOn(
