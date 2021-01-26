@@ -12,7 +12,7 @@ Highlights
 
 1. Generates source code directly under `src_managed` by default (works
    better with IntelliJ)
-1. Supports compiling protos in both `test` and `compile` configuration.
+1. Supports compiling protos in both `Test` and `Compile` configuration.
 1. Supports JVM-based code generators. [Write your own custom code generator.](https://scalapb.github.io/docs/writing-plugins)
 1. Straightforward: No `PB.protobufSettings`, packaged as auto-plugin.
 
