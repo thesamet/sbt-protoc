@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.0.1]
+* Compile protos brought by `ProtobufSrcConfig` only once per project (#219)
+
 ## [1.0.0-RC7]
 * don't inherit parent configs' values for targets/protocOptions (c9ed1c2)
 
