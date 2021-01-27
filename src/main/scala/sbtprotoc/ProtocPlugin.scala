@@ -78,8 +78,8 @@ object ProtocPlugin extends AutoPlugin {
       val protocCache = TaskKey[FileCache[ModuleID]]("protoc-cache", "Cache of protoc executables")
 
       val cacheArtifactResolution = SettingKey[Boolean](
-        "cache-artifact-resolution",
-        "If false, all sandboxed generators will be re-resolved on each invocation. This is useful when a custom PB.artifactResolver returns different files on each invocation."
+        "protoc-cache-artifact-resolution",
+        "If false, all sandboxed generators will be resolved on each invocation. This is useful when a custom PB.artifactResolver returns different files on each invocation."
       )
 
       @deprecated(
