@@ -15,7 +15,7 @@ import java.net.URLClassLoader
 import java.util.jar.JarInputStream
 import sbt.librarymanagement.DependencyResolution
 import protocbridge.{Artifact => BridgeArtifact}
-import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache}
+import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache, PluginGenerator}
 import scala.concurrent.{Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -545,9 +545,9 @@ object ProtocPlugin extends AutoPlugin {
       // Ensure all plugins are executable
       nativePlugins.foreach { dep => dep.data.setExecutable(true) }
 
-      val nativePluginsArgs = nativePlugins.map { a =>
+      val nativePluginsArgs = nativePlugins.flatMap { a =>
         val dep = a.get(artifact.key).get
-        val pluginPath =
+        val pluginPath = {
           maybeNixDynamicLinker.filterNot(_ => a.data.getName.endsWith(".sh")) match {
             case None => a.data.absolutePath
             case Some(linker) =>
@@ -558,7 +558,13 @@ object ProtocPlugin extends AutoPlugin {
                 f.getAbsolutePath()
               }
           }
-        s"--plugin=${dep.name}=${pluginPath}"
+        }
+        val targetCount = PB.targets.value.count {
+          case Target(PluginGenerator(name, _, _), _, _) => s"protoc-gen-$name" == dep.name
+          case _                                         => false
+        }
+        if (targetCount == 1) Seq(s"--plugin=${dep.name}=${pluginPath}")
+        else Seq.range(0, targetCount).map(i => s"--plugin=${dep.name}_$i=${pluginPath}")
       }
 
       val classLoader: BridgeArtifact => ClassLoader =
