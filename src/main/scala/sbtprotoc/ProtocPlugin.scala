@@ -559,12 +559,13 @@ object ProtocPlugin extends AutoPlugin {
               }
           }
         }
-        val targetCount = PB.targets.value.count {
-          case Target(PluginGenerator(name, _, _), _, _) => s"protoc-gen-$name" == dep.name
-          case _                                         => false
+        val suffixed = PB.targets.value.zipWithIndex.collect {
+          case (Target(PluginGenerator(name, _, None), _, _), i)
+              if s"protoc-gen-$name" == dep.name =>
+            s"--plugin=${dep.name}_$i=${pluginPath}"
         }
-        if (targetCount == 1) Seq(s"--plugin=${dep.name}=${pluginPath}")
-        else Seq.range(0, targetCount).map(i => s"--plugin=${dep.name}_$i=${pluginPath}")
+        if (suffixed.length == 1) Seq(s"--plugin=${dep.name}=${pluginPath}")
+        else suffixed
       }
 
       val classLoader: BridgeArtifact => ClassLoader =
