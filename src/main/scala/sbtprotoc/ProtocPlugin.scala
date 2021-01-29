@@ -429,7 +429,7 @@ object ProtocPlugin extends AutoPlugin {
       )
       log.debug("protoc options:")
       protocOptions.map("\t" + _).foreach(log.debug(_))
-      schemas.foreach(schema => log.info("Compiling schema %s" format schema))
+      schemas.foreach(schema => log.debug("Compiling schema %s" format schema))
 
       val exitCode =
         executeProtoc(protocRunner, schemas, includePaths, protocOptions, targets, sandboxedLoader)
