@@ -2,7 +2,7 @@ package sbtprotoc
 
 import sbt._
 import Keys._
-import java.io.File
+import java.io.{File, FileInputStream, IOException}
 
 import protocbridge.{DescriptorSetGenerator, SandboxedJvmGenerator, Target, ProtocRunner}
 import sbt.librarymanagement.{CrossVersion, ModuleID}
@@ -12,6 +12,7 @@ import sbt.util.CacheImplicits
 import sjsonnew.JsonFormat
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 import java.net.URLClassLoader
+import java.util.jar.JarInputStream
 import sbt.librarymanagement.DependencyResolution
 import protocbridge.{Artifact => BridgeArtifact}
 import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache}
@@ -339,11 +340,16 @@ object ProtocPlugin extends AutoPlugin {
       unmanagedSourceDirectories += sourceDirectory.value / "protobuf"
     )
 
-  case class UnpackedDependencies(mappedFiles: Map[File, Seq[File]]) {
-    def files: Seq[File] = mappedFiles.values.flatten.toSeq
+  case class UnpackedDependency(files: Seq[File], optionProtos: Seq[File])
+
+  case class UnpackedDependencies(mappedFiles: Map[File, UnpackedDependency]) {
+    def files: Seq[File] = mappedFiles.values.flatMap(_.files).toSeq
   }
 
   private[sbtprotoc] object UnpackedDependencies extends CacheImplicits {
+    implicit val UnpackedDependencyFormat: JsonFormat[UnpackedDependency] =
+      caseClassArray(UnpackedDependency.apply _, UnpackedDependency.unapply _)
+
     implicit val UnpackedDependenciesFormat: JsonFormat[UnpackedDependencies] =
       caseClassArray(UnpackedDependencies.apply _, UnpackedDependencies.unapply _)
   }
@@ -452,7 +458,7 @@ object ProtocPlugin extends AutoPlugin {
       deps: Seq[File],
       extractTarget: File,
       streams: TaskStreams
-  ): Seq[(File, Seq[File])] = {
+  ): Seq[(File, UnpackedDependency)] = {
     def cachedExtractDep(dep: File): Seq[File] = {
       val cached = FileFunction.cached(
         streams.cacheDirectory / dep.name,
@@ -470,7 +476,38 @@ object ProtocPlugin extends AutoPlugin {
       cached(Set(dep)).toSeq
     }
 
-    deps.map { dep => dep -> cachedExtractDep(dep) }
+    deps.map { dep =>
+      val fileSet = cachedExtractDep(dep)
+      dep ->
+        UnpackedDependency(fileSet, getOptionProtos(dep, extractTarget, fileSet))
+    }
+  }
+
+  // Unpacked proto jars may contain a key in their manifest to tell us about
+  // the generator options used to generate the sources. The option will be
+  // sourced into ScalaPB.
+  def getOptionProtos(jar: File, extractTarget: File, fileSet: Seq[File]): Seq[File] = {
+    val jin = new JarInputStream(new FileInputStream(jar))
+    try {
+      val manifest = jin.getManifest()
+      val optionProtos = Option(manifest.getMainAttributes().getValue("Scalapb-Options-Proto"))
+        .map(_.split(',').toSeq)
+        .getOrElse(Seq.empty)
+        .map(new File(extractTarget, _))
+
+      optionProtos.foreach { optionProto =>
+        if (!fileSet.contains(optionProto)) {
+          throw new IOException(
+            s"Dependency $jar manifest references a non-existant proto $optionProto"
+          )
+        }
+      }
+
+      optionProtos
+
+    } finally {
+      jin.close()
+    }
   }
 
   private[this] def isNativePlugin(dep: Attributed[File]): Boolean =
@@ -487,12 +524,15 @@ object ProtocPlugin extends AutoPlugin {
       val log       = (key / streams).value.log
       val toInclude = (key / includeFilter).value
       val toExclude = (key / excludeFilter).value
+      val optionProtos =
+        (key / PB.unpackDependencies).value.mappedFiles.values.flatMap(_.optionProtos)
       val schemas = (key / PB.protoSources).value
         .toSet[File]
         .flatMap(srcDir =>
           (srcDir ** (toInclude -- toExclude)).get
             .map(_.getAbsoluteFile)
-        )
+        ) ++ optionProtos
+
       // Include Scala binary version like "_2.11" for cross building.
       val cacheFile =
         (key / streams).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
@@ -632,7 +672,9 @@ object ProtocPlugin extends AutoPlugin {
         (key / PB.externalSourcePath).value,
         (key / streams).value
       )
-      val unpackedDeps = UnpackedDependencies((extractedFiles ++ extractedSrcFiles).toMap)
+      val unpackedDeps = UnpackedDependencies(
+        (extractedFiles ++ extractedSrcFiles).toMap
+      )
 
       // clean up stale files that are no longer pulled by a dependency
       val previouslyExtractedFiles = key.previous.map(_.files).toSeq.flatten
