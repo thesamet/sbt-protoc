@@ -11,9 +11,9 @@ Compile / PB.targets := Seq(
   ) -> (Compile / sourceManaged).value
 )
 
-val scalapbcClassifier =
-  if (protocbridge.SystemDetector.detectedClassifier().startsWith("windows")) "windows"
-  else "unix"
+val isWindows                = protocbridge.SystemDetector.detectedClassifier().startsWith("windows")
+val protocGenScalaExtension  = if (isWindows) "bat" else "sh"
+val protocGenScalaClassifier = if (isWindows) "windows" else "unix"
 
 libraryDependencies += "javax.annotation" % "javax.annotation-api" % "1.3.2"
 libraryDependencies += "io.grpc"          % "grpc-stub"            % "1.35.0"
@@ -25,7 +25,7 @@ libraryDependencies += "com.thesamet.scalapb"  % "protoc-gen-scala" % "0.10.10" 
   Artifact(
     "protoc-gen-scala",
     PB.ProtocPlugin,
-    "sh",
-    scalapbcClassifier
+    protocGenScalaExtension,
+    protocGenScalaClassifier
   )
 )
