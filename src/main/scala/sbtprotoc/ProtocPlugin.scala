@@ -489,9 +489,11 @@ object ProtocPlugin extends AutoPlugin {
   def getOptionProtos(jar: File, extractTarget: File, fileSet: Seq[File]): Seq[File] = {
     val jin = new JarInputStream(new FileInputStream(jar))
     try {
-      val manifest = jin.getManifest()
-      val optionProtos = Option(manifest.getMainAttributes().getValue("Scalapb-Options-Proto"))
-        .map(_.split(',').toSeq)
+      val optionProtos = (for {
+        manifest     <- Option(jin.getManifest())
+        attrs        <- Option(manifest.getMainAttributes())
+        optionProtos <- Option(attrs.getValue("Scalapb-Options-Proto"))
+      } yield optionProtos.split(',').toSeq)
         .getOrElse(Seq.empty)
         .map(new File(extractTarget, _))
 
