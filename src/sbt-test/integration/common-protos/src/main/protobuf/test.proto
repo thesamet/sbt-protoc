@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+import "validate/validate.proto";
+
+message Foo {
+    validate.Int32Rules rules = 1;
+}
