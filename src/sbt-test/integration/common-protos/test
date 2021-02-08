@@ -1,1 +1,4 @@
-> compile
+> bottom/compile
+
+$ exists ./top/target/scala-2.13/classes/Foo.class
+$ exists ./bottom/target/scala-2.13/classes/Bar.class

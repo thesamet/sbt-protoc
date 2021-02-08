@@ -305,8 +305,8 @@ object ProtocPlugin extends AutoPlugin {
       PB.includePaths := (
         PB.includePaths.?.value.getOrElse(Nil) ++
           PB.protoSources.value ++
-          protocIncludeDependencies.value ++
-          Seq(PB.externalIncludePath.value, PB.externalSourcePath.value),
+          Seq(PB.externalIncludePath.value, PB.externalSourcePath.value) ++
+          protocIncludeDependencies.value,
       ).distinct,
       PB.generate := sourceGeneratorTask(PB.generate)
         .dependsOn(
