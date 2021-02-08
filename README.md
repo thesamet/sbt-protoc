@@ -124,6 +124,10 @@ Migration notes
 * Protos imported with "protobuf-src" are now compiled only once per project, in the `Compile` configuration.
   Use `Test / PB.protoSources += PB.externalSourcePath.value` to trigger compilation also in `Test` (the
   previous behavior).
+* The `cacheClassLoaders` setting key is now deprecated as sbt-protoc now automatically reloads the class
+  loaders used for sandboxing if it detects that the classpath it targets has changed since the last
+  invocation. For advanced setups with a custom `PB.artifactResolver` returning different files on each
+  invocation (and only for those), consider setting `cacheArtifactResolution` to `false`.
 
 #### From sbt-protoc < 1.0.0 to 1.0.0
 
