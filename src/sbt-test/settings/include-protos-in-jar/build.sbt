@@ -2,6 +2,8 @@ val protobufVersion = "3.11.4"
 
 libraryDependencies += "com.google.protobuf" % "protobuf-java" % protobufVersion % "protobuf"
 
+Compile / PB.protoSources := Seq((Compile / sourceDirectory).value / "pb")
+
 PB.generate / excludeFilter := "test1.proto"
 
 TaskKey[Unit]("checkJar") := {

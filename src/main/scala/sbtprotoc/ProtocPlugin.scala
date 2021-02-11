@@ -336,8 +336,10 @@ object ProtocPlugin extends AutoPlugin {
           name.endsWith(".java") || name.endsWith(".scala")
         })
         .taskValue,
-      unmanagedResourceDirectories += sourceDirectory.value / "protobuf",
-      unmanagedSourceDirectories += sourceDirectory.value / "protobuf"
+      unmanagedResourceDirectories ++= PB.protoSources.value
+        .filterNot(_ == PB.externalSourcePath.value),
+      unmanagedSourceDirectories ++= PB.protoSources.value
+        .filterNot(_ == PB.externalSourcePath.value)
     )
 
   case class UnpackedDependency(files: Seq[File], optionProtos: Seq[File])
