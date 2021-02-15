@@ -526,14 +526,18 @@ object ProtocPlugin extends AutoPlugin {
       val log       = (key / streams).value.log
       val toInclude = (key / includeFilter).value
       val toExclude = (key / excludeFilter).value
-      val optionProtos =
-        (key / PB.unpackDependencies).value.mappedFiles.values.flatMap(_.optionProtos)
       val schemas = (key / PB.protoSources).value
         .toSet[File]
         .flatMap(srcDir =>
           (srcDir ** (toInclude -- toExclude)).get
             .map(_.getAbsoluteFile)
-        ) ++ optionProtos
+        ) match {
+        case protos if protos.nonEmpty =>
+          val optionProtos =
+            (key / PB.unpackDependencies).value.mappedFiles.values.flatMap(_.optionProtos)
+          protos ++ optionProtos
+        case _ => Set.empty[File]
+      }
 
       // Include Scala binary version like "_2.11" for cross building.
       val cacheFile =
