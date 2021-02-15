@@ -578,7 +578,7 @@ object ProtocPlugin extends AutoPlugin {
         Def.task {
           val log      = (key / streams).value.log
           val resolver = (key / PB.artifactResolver).value
-          val cache    = (key / PB.cacheClassLoaders).value || (key / PB.cacheArtifactResolution).value
+          val cache    = (key / PB.cacheClassLoaders).value && (key / PB.cacheArtifactResolution).value
           (artifact: BridgeArtifact) =>
             val (_, classloader) =
               classloaderCache
