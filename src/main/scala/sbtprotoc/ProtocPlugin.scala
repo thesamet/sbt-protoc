@@ -80,7 +80,9 @@ object ProtocPlugin extends AutoPlugin {
 
       val cacheArtifactResolution = SettingKey[Boolean](
         "protoc-cache-artifact-resolution",
-        "If false, all sandboxed generators will be resolved on each invocation. This is useful when a custom PB.artifactResolver returns different files on each invocation."
+        "If false, all sandboxed generators artifacts will be resolved on each invocation (instead of once " +
+          "for the entire sbt session).  This is useful when a custom PB.artifactResolver returns different files on " +
+          "each invocation."
       )
 
       @deprecated(
@@ -399,7 +401,7 @@ object ProtocPlugin extends AutoPlugin {
         )
     }
 
-  private[this] def sandboxedClassLoader(files: Seq[File]): ClassLoader = {
+  private[this] def sandboxedClassLoader(files: Seq[File]): URLClassLoader = {
     val cloader = new URLClassLoader(
       files.map(_.toURI().toURL()).toArray,
       new FilteringClassLoader(getClass().getClassLoader())
@@ -520,12 +522,15 @@ object ProtocPlugin extends AutoPlugin {
   private[this] val classloaderCache =
     new java.util.concurrent.ConcurrentHashMap[
       BridgeArtifact,
-      (FilesInfo[ModifiedFileInfo], ClassLoader)
+      (FilesInfo[ModifiedFileInfo], URLClassLoader)
     ]
 
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
       val log       = (key / streams).value.log
+      val resolver  = (key / PB.artifactResolver).value
+      val cache     = (key / PB.cacheClassLoaders).value && (key / PB.cacheArtifactResolution).value
+      val targets   = (key / PB.targets).value
       val toInclude = (key / includeFilter).value
       val toExclude = (key / excludeFilter).value
       val schemas = (key / PB.protoSources).value
@@ -574,42 +579,48 @@ object ProtocPlugin extends AutoPlugin {
         else suffixed
       }
 
-      val classLoader: BridgeArtifact => ClassLoader =
-        Def.task {
-          val log      = (key / streams).value.log
-          val resolver = (key / PB.artifactResolver).value
-          val cache    = (key / PB.cacheClassLoaders).value && (key / PB.cacheArtifactResolution).value
-          (artifact: BridgeArtifact) =>
-            val (_, classloader) =
-              classloaderCache
-                .compute(
-                  artifact,
-                  { (_, prevValue) =>
-                    def stampClasspath(files: Set[File]) =
-                      FileInfo.lastModified(files.allPaths.get.toSet)
+      // Prepare memoized classloaders for all artifacts referenced by targets. For each artifact, classpath is deeply
+      // stamped and compared with the previous stamp to reload the classloader upon changes. Artifact resolution is
+      // memoized across invocations for the entire sbt session, unless cacheArtifactResolution is false.
+      val stampedClassLoadersByArtifact
+          : Map[BridgeArtifact, (FilesInfo[ModifiedFileInfo], ClassLoader)] =
+        targets
+          .collect { case Target(SandboxedJvmGenerator(_, artifact, _, _), _, _) => artifact }
+          .distinct
+          .map { artifact =>
+            artifact -> classloaderCache.compute(
+              artifact,
+              { (_, prevValue) =>
+                def stampClasspath(files: Seq[File]) =
+                  // artifact paths can be JARs or directories, so a recursive stamp is needed
+                  FileInfo.lastModified(files.toSet[File].allPaths.get.toSet)
 
-                    lazy val resolved = resolver(artifact)
-
-                    if (prevValue == null) {
-                      (stampClasspath(resolved.toSet), sandboxedClassLoader(resolved))
-                    } else {
-                      val prevFilesInfo = prevValue._1
-                      val newFiles =
-                        if (!cache) resolved.toSet
-                        else prevFilesInfo.files.map(_.file)
-                      val newFilesInfo = stampClasspath(newFiles)
-                      if (newFilesInfo == prevFilesInfo) prevValue
-                      else {
-                        log.debug(s"Reloading classloader for $artifact (classpath was updated)")
-                        (newFilesInfo, sandboxedClassLoader(resolved))
-                      }
+                if (prevValue == null) {
+                  // first time this classpath is requested since the start of sbt
+                  val resolved = resolver(artifact)
+                  (stampClasspath(resolved), sandboxedClassLoader(resolved))
+                } else {
+                  val (prevFilesInfo, prevClassLoader) = prevValue
+                  val currentFiles =
+                    if (!cache) resolver(artifact)
+                    else {
+                      // use classpath as referenced by the previous classloader (which may contain directories)
+                      // rather than the previous files captured in the stamp so that any potential new file is
+                      // taken into account in the current stamp.
+                      prevClassLoader.getURLs.toSeq.map(url => file(url.toURI.getPath))
                     }
+                  val currentFilesInfo = stampClasspath(currentFiles)
+                  if (currentFilesInfo == prevFilesInfo) prevValue
+                  else {
+                    log.debug(s"Reloading classloader for $artifact (classpath was updated)")
+                    (currentFilesInfo, sandboxedClassLoader(currentFiles))
                   }
-                )
-            classloader
-        }.value
+                }
+              }
+            )
+          }
+          .toMap
 
-      val targets = (key / PB.targets).value
       val arguments = Arguments(
         PB.protocVersion.value,
         (key / PB.includePaths).value,
@@ -625,7 +636,23 @@ object ProtocPlugin extends AutoPlugin {
         }
       )
 
-      def compileProto(): Set[File] =
+      def compileProto(): Set[File] = {
+        val classLoader: BridgeArtifact => ClassLoader = stampedClassLoadersByArtifact
+          .mapValues(_._2)
+          .applyOrElse(
+            _,
+            { artifact: BridgeArtifact =>
+              // Fallback to the resolver on demand if protocbridge requests an artifact that
+              // was not preloaded because it was not directly referenced from PB.targets generators
+              val classpath = resolver(artifact)
+              log.warn(
+                s"Initializing on-demand cacheloader for unknown artifact $artifact - " +
+                  s"consider upgrading sbt-protoc or setting 'PB.recompile := true' to avoid " +
+                  s"getting stale output as artifact changes will not be tracked"
+              )
+              sandboxedClassLoader(classpath)
+            }
+          )
         compile(
           (key / PB.runProtoc).value,
           schemas,
@@ -636,9 +663,11 @@ object ProtocPlugin extends AutoPlugin {
           log,
           classLoader
         )
+      }
 
       import CacheImplicits._
-      val cachedCompile = Tracked.inputChanged[(Arguments, FilesInfo[ModifiedFileInfo]), Set[File]](
+      type Stamp = (Arguments, Seq[FilesInfo[ModifiedFileInfo]])
+      val cachedCompile = Tracked.inputChanged[Stamp, Set[File]](
         cacheFile / "input"
       ) { case (inChanged, _) =>
         Tracked.diffOutputs(
@@ -660,18 +689,15 @@ object ProtocPlugin extends AutoPlugin {
         }
       }
 
-      val resolver = (key / PB.artifactResolver).value
       if (PB.recompile.value) {
         log.debug("Ignoring cache (PB.recompile := true)")
         compileProto().toSeq
       } else {
-        val sandboxedArtifactsClasspath =
-          targets
-            .map(_.generator)
-            .collect { case SandboxedJvmGenerator(_, artifact, _, _) => artifact }
-            .flatMap(resolver(_).allPaths.get) // artifact paths can be JARs or directories
-        val input = schemas ++ arguments.includePaths.allPaths.get ++ sandboxedArtifactsClasspath
-        cachedCompile((arguments, FileInfo.lastModified(input))).toSeq
+        val sandboxedArtifactsStamps =
+          stampedClassLoadersByArtifact.values.map(_._1).toSeq
+        val inputStamp =
+          FileInfo.lastModified(schemas ++ arguments.includePaths.allPaths.get)
+        cachedCompile((arguments, sandboxedArtifactsStamps :+ inputStamp)).toSeq
       }
     }
 

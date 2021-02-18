@@ -2,6 +2,22 @@
 # stamp input files. If this was to change, this would yield false negatives and we will  have
 # to find a more advanced instrumentation strategy.
 
+# Verify the effect of PB.cacheArtifactResolution, relying on the build artifactResolver which
+# triggers failures in protocGenerate by returning nothing for the local generator every other time
+> api/protocGenerate
+$ touch api/src/main/protobuf/foo.proto
+> api/protocGenerate
+> 'set api / PB.cacheArtifactResolution := false'
+$ touch api/src/main/protobuf/foo.proto
+-> api/protocGenerate
+$ touch api/src/main/protobuf/foo.proto
+> api/protocGenerate
+> 'set api / PB.cacheArtifactResolution := true'
+$ touch api/src/main/protobuf/foo.proto
+> api/protocGenerate
+$ touch api/src/main/protobuf/foo.proto
+> api/protocGenerate
+
 # verify that a second run of protocGenerate does not run protoc by land-mining the input file
 > api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto false

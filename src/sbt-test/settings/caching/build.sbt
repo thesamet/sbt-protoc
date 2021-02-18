@@ -35,7 +35,8 @@ lazy val api = (project in file("api"))
       PB.gens.java -> (Compile / sourceManaged).value,
       Target(PB.gens.plugin("validate"), (Compile / sourceManaged).value, Seq("lang=java")),
       scalapb.gen() -> (Compile / sourceManaged).value,
-      localGen      -> (Compile / sourceManaged).value
+      localGen      -> (Compile / sourceManaged).value,
+      localGen      -> (Compile / resourceManaged).value // use 2 generators with the same artifact to check dedup
     ),
     PB.additionalDependencies ++= Seq(
       "com.google.protobuf"                % "protobuf-java"       % "3.13.0" % "protobuf",
@@ -46,8 +47,10 @@ lazy val api = (project in file("api"))
       val cp          = (codegen / Compile / fullClasspath).value.map(_.data)
       (a: protocbridge.Artifact) =>
         a match {
-          case DummyArtifact => cp
-          case other         => oldResolver(other)
+          case DummyArtifact =>
+            // every other resolution triggers failure in the next protocGenerate
+            if (Count.incrementAndGet % 2 != 0) cp else Nil
+          case other => oldResolver(other)
         }
     }
   )
