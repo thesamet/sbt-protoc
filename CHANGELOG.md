@@ -1,6 +1,11 @@
 # Changelog
 
-## [1.0.1] (Unreleased)
+## [1.0.2] (Unreleased)
+* Reduce the amount of artifact resolution & stamping (#227)
+* Honor `cacheArtifactResolution := false` (#226)
+* Don't run protoc with only Scalapb-Options-Proto sources (#225)
+
+## [1.0.1]
 * Compile protos brought by `ProtobufSrcConfig` only once per project (#219)
 * Better cache invalidation (#217)
 * A plugin downloaded from a maven repository and injected via `asProtocPlugin()` can now be used in several PB.targets (#220)
