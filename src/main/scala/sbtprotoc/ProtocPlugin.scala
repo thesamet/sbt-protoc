@@ -637,22 +637,8 @@ object ProtocPlugin extends AutoPlugin {
       )
 
       def compileProto(): Set[File] = {
-        val classLoader: BridgeArtifact => ClassLoader = stampedClassLoadersByArtifact
-          .mapValues(_._2)
-          .applyOrElse(
-            _,
-            { artifact: BridgeArtifact =>
-              // Fallback to the resolver on demand if protocbridge requests an artifact that
-              // was not preloaded because it was not directly referenced from PB.targets generators
-              val classpath = resolver(artifact)
-              log.warn(
-                s"Initializing on-demand cacheloader for unknown artifact $artifact - " +
-                  s"consider upgrading sbt-protoc or setting 'PB.recompile := true' to avoid " +
-                  s"getting stale output as artifact changes will not be tracked"
-              )
-              sandboxedClassLoader(classpath)
-            }
-          )
+        val sandboxedLoader: BridgeArtifact => ClassLoader =
+          stampedClassLoadersByArtifact.mapValues(_._2)
         compile(
           (key / PB.runProtoc).value,
           schemas,
@@ -661,7 +647,7 @@ object ProtocPlugin extends AutoPlugin {
           targets,
           arguments.deleteTargetDirectory,
           log,
-          classLoader
+          sandboxedLoader
         )
       }
 
