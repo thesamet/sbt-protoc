@@ -46,6 +46,13 @@ Compile / PB.targets := Seq(
 )
 ```
 
+To pass generator parameters, for example to request the Java lite runtime, use:
+```scala
+Compile / PB.targets := Seq(
+  Target(PB.gens.java, (Compile / sourceManaged).value, Seq("lite"))
+)
+```
+
 For ScalaPB:
 ```scala
 Compile / PB.targets := Seq(
