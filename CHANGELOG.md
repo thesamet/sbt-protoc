@@ -4,6 +4,7 @@
 * Reduce the amount of artifact resolution & stamping (#227)
 * Honor `cacheArtifactResolution := false` (#226)
 * Don't run protoc with only Scalapb-Options-Proto sources (#225)
+* Add `PB.targets` directories to `managedSourceDirectories` so that IDEs are aware of the generated sources in them and can provide autocompletion etc.
 
 ## [1.0.1]
 * Compile protos brought by `ProtobufSrcConfig` only once per project (#219)
