@@ -1,7 +1,3 @@
-import ReleaseTransformations._
-
-organization := "com.thesamet"
-
 name := "sbt-protoc"
 
 description := "SBT plugin for generating code from Protocol Buffer using protoc"
@@ -27,25 +23,23 @@ scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
 // https://github.com/sbt/sbt/issues/5049#issuecomment-538404839
 pluginCrossBuild / sbtVersion := "1.2.8"
 
-licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
+sonatypeProfileName := "com.thesamet"
 
-publishMavenStyle := false
-
-bintrayRepository := "sbt-plugins"
-
-bintray / bintrayOrganization := None
-
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  releaseStepCommandAndRemaining("^ test"),
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  releaseStepCommandAndRemaining("^ publish"),
-  releaseStepTask(bintrayRelease),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
+inThisBuild(
+  List(
+    organization := "com.thesamet",
+    homepage := Some(url("https://github.com/thesamet/sbt-protoc")),
+    licenses := List(
+      "Apache-2.0" ->
+        url("http://www.apache.org/licenses/LICENSE-2.0")
+    ),
+    developers := List(
+      Developer(
+        "thesamet",
+        "Nadav Samet",
+        "thesamet@gmail.com",
+        url("https://www.thesamet.com")
+      )
+    )
+  )
 )
