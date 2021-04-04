@@ -245,7 +245,7 @@ IntegrationTest / PB.targets := Seq(
 Debugging
 ---------
 
-Show proto files extracted and where there are comming from:
+Show proto files extracted and where there are coming from:
  ```scala
 sbt> set logLevel := Level.Debug
 sbt> protocUnpackDependencies
