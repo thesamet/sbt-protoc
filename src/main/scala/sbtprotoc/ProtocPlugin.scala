@@ -322,16 +322,26 @@ object ProtocPlugin extends AutoPlugin {
           )
         )
         .value,
-      PB.runProtoc := {
-        val s    = streams.value
-        val exec = PB.protocExecutable.value.getAbsolutePath.toString
-        (protocbridge.ProtocRunner.fromFunction { (args, extraEnv) =>
-          s.log.debug(
-            s"Executing protoc with ${args.mkString("[", ", ", "]")} and extraEnv=$extraEnv"
-          )
-          ()
-        } zip protocbridge.ProtocRunner(exec)).map(_._2)
-      },
+      PB.runProtoc := Def.taskDyn {
+        val s = streams.value
+        if (PB.targets.value == Nil) {
+          Def.task {
+            // return a dummy instance that should never be evaluated
+            protocbridge.ProtocRunner.fromFunction[Int] { (_, _) =>
+              throw new RuntimeException("protoc was not resolved")
+            }
+          }
+        } else
+          Def.task {
+            val exec = PB.protocExecutable.value.getAbsolutePath.toString
+            (protocbridge.ProtocRunner.fromFunction { (args, extraEnv) =>
+              s.log.debug(
+                s"Executing protoc with ${args.mkString("[", ", ", "]")} and extraEnv=$extraEnv"
+              )
+              ()
+            } zip protocbridge.ProtocRunner(exec)).map(_._2)
+          }
+      }.value,
       sourceGenerators += PB.generate
         .map(_.filter { file =>
           val name = file.getName
