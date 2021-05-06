@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.3] (Unreleased)
+* Revert: Add `PB.targets` directories to `managedSourceDirectories`. IntelliJ has been fixed.
+
 ## [1.0.2]
 * Reduce the amount of artifact resolution & stamping (#227)
 * Honor `cacheArtifactResolution := false` (#226)

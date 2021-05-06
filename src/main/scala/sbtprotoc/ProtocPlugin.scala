@@ -351,8 +351,7 @@ object ProtocPlugin extends AutoPlugin {
       unmanagedResourceDirectories ++= PB.protoSources.value
         .filterNot(_ == PB.externalSourcePath.value),
       unmanagedSourceDirectories ++= PB.protoSources.value
-        .filterNot(_ == PB.externalSourcePath.value),
-      managedSourceDirectories ++= PB.targets.value.map(_.outputPath).distinct
+        .filterNot(_ == PB.externalSourcePath.value)
     )
 
   case class UnpackedDependency(files: Seq[File], optionProtos: Seq[File])
