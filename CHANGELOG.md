@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.4] (Unreleased)
+* `PB.targets` directories are no longer added to `managedSourceDirectories` as the underlying bug in intellij which prompted that change has been fixed in IntelliJ 2021.1.1.
+
+## [1.0.3]
+  * This version is published to maven instead of bintray.
+
 ## [1.0.2]
 * Reduce the amount of artifact resolution & stamping (#227)
 * Honor `cacheArtifactResolution := false` (#226)
