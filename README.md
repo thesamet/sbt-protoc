@@ -1,5 +1,3 @@
-# April 12, 2021: Please update to sbt-protoc 1.0.3. Older artifacts published to bintray are [currently not accessible](https://status.bintray.com/)
-
 sbt-protoc
 ==========
 [![CI](https://github.com/thesamet/sbt-protoc/workflows/CI/badge.svg)](https://github.com/thesamet/sbt-protoc/actions?query=workflow%3ACI)
