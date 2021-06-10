@@ -1,6 +1,11 @@
 # Changelog
 
-## [1.0.4] (Unreleased)
+## [1.0.5]
+* Add option `PB.manifestProcessing` (defaults to true) that allows you to
+  opt-opt of the manifest processing feature of sbt-protoc that automatically
+  adds option protos as a source file to protoc.
+
+## [1.0.4]
 * `PB.targets` directories are no longer added to `managedSourceDirectories` as the underlying bug in intellij which prompted that change has been fixed in IntelliJ 2021.1.1.
 
 ## [1.0.3]

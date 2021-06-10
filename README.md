@@ -212,6 +212,14 @@ PB.additionalDependencies := Nil
 // Since version 0.99.15 this option has no effect, and will be removed in a
 // future version.
 PB.pythonExe := "/path/to/python.exe"
+
+// Disables the manifest processing feature of sbt-protoc that automatically
+// adds option protos as a source file to protoc when `ScalaPB-Options-Proto`
+// is found in a dependency jar manifest. This setting is turned on by default,
+// and disabling it can lead to generation of code that does not compile due
+// to inconsistent generator settings between your project and the dependencies
+// added. See also https://scalapb.github.io/docs/customizations/#publishing-package-scoped-options
+Compile / manifestProcessing := false
 ```
 
 Protos in other configs
