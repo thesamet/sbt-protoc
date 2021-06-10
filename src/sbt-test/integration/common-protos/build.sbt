@@ -9,7 +9,7 @@ lazy val bottom = (project in file("bottom"))
 
 lazy val disable = (project in file("disable"))
   .settings(commonSettings)
-  .settings(Compile / PB.disableManifestProcessing := true)
+  .settings(Compile / PB.manifestProcessing := false)
 
 lazy val commonSettings = Seq(
   Compile / PB.targets := Seq(scalapb.gen(flatPackage = true) -> (Compile / sourceManaged).value),

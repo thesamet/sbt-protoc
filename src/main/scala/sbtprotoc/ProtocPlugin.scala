@@ -53,10 +53,10 @@ object ProtocPlugin extends AutoPlugin {
       val protoSources =
         SettingKey[Seq[File]]("protoc-sources", "Directories to look for source files")
 
-      val disableManifestProcessing =
+      val manifestProcessing =
         SettingKey[Boolean](
-          "protoc-disable-manifest",
-          "Disable the automatic addition of scalapb compiler option files from the compile scope"
+          "protoc-manifest-processing",
+          "Enable the automatic addition of scalapb compiler option files from the protoc compile scope"
         )
 
       val targets = SettingKey[Seq[Target]]("protoc-targets", "List of targets to generate")
@@ -310,7 +310,7 @@ object ProtocPlugin extends AutoPlugin {
       PB.targets := Nil,
       PB.protoSources := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
-      PB.disableManifestProcessing := false,
+      PB.manifestProcessing := true,
       PB.includePaths := (
         PB.includePaths.?.value.getOrElse(Nil) ++
           PB.protoSources.value ++
@@ -557,10 +557,10 @@ object ProtocPlugin extends AutoPlugin {
             .map(_.getAbsoluteFile)
         ) match {
         case protos if protos.nonEmpty =>
-          val disableManifests = (key / PB.disableManifestProcessing).value
+          val processManifests = (key / PB.manifestProcessing).value
           val dependencies     = (key / PB.unpackDependencies).value
 
-          if (disableManifests) protos
+          if (!processManifests) protos
           else {
             val optionProtos = dependencies.mappedFiles.values.flatMap(_.optionProtos)
             protos ++ optionProtos
