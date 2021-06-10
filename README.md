@@ -219,7 +219,7 @@ PB.pythonExe := "/path/to/python.exe"
 // and disabling it can lead to generation of code that does not compile due
 // to inconsistent generator settings between your project and the dependencies
 // added. See also https://scalapb.github.io/docs/customizations/#publishing-package-scoped-options
-Compile / manifestProcessing := false
+Compile / PB.manifestProcessing := false
 ```
 
 Protos in other configs
