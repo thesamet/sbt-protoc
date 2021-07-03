@@ -581,7 +581,9 @@ object ProtocPlugin extends AutoPlugin {
       val nativePluginsArgs = nativePlugins.flatMap { a =>
         val dep = a.get(artifact.key).get
         val pluginPath = {
-          maybeNixDynamicLinker.filterNot(_ => a.data.getName.endsWith(".sh")) match {
+          ProtocRunner
+            .maybeNixDynamicLinker()
+            .filterNot(_ => a.data.getName.endsWith(".sh")) match {
             case None => a.data.absolutePath
             case Some(linker) =>
               IO.withTemporaryFile("nix", dep.name, keepFile = true) { f =>
@@ -748,10 +750,5 @@ object ProtocPlugin extends AutoPlugin {
       .cross(if (f.crossVersion) CrossVersion.binary else CrossVersion.disabled)
       .withExtraAttributes(f.extraAttributes)
   }
-
-  private[this] def maybeNixDynamicLinker: Option[String] =
-    sys.env.get("NIX_CC").map { nixCC =>
-      IO.read(file(nixCC + "/nix-support/dynamic-linker")).trim
-    }
 
 }
