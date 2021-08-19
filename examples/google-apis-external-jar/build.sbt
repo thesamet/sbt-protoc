@@ -16,11 +16,10 @@ lazy val googleCommonProtos = (project in file("google-common-protos"))
     ),
 
     // In addition to the JAR we care about, the protobuf_external directory
-    // is going to contain protos from Google's standard protos.  
+    // is going to contain protos from Google's standard protos.
     // In order to avoid compiling things we don't use, we restrict what's
     // compiled to a subdirectory of protobuf_external
     Compile / PB.protoSources += target.value / "protobuf_external" / "google" / "type",
-
     Compile / PB.targets := Seq(
       scalapb.gen() -> (Compile / sourceManaged).value
     )
@@ -38,10 +37,8 @@ lazy val myProject = (project in file("my-project"))
     libraryDependencies ++= Seq(
       GrpcProtosArtifact % "protobuf"
     ),
-
     Compile / PB.targets := Seq(
       scalapb.gen() -> (Compile / sourceManaged).value
-    ),
-
+    )
   )
-  .dependsOn(googleCommonProtos)  // brings the compiled Scala classes from googleCommonProtos
+  .dependsOn(googleCommonProtos) // brings the compiled Scala classes from googleCommonProtos

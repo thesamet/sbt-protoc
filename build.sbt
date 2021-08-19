@@ -28,7 +28,7 @@ sonatypeProfileName := "com.thesamet"
 inThisBuild(
   List(
     organization := "com.thesamet",
-    homepage := Some(url("https://github.com/thesamet/sbt-protoc")),
+    homepage     := Some(url("https://github.com/thesamet/sbt-protoc")),
     licenses := List(
       "Apache-2.0" ->
         url("http://www.apache.org/licenses/LICENSE-2.0")

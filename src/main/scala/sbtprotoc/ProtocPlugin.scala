@@ -173,10 +173,10 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
     Seq(
-      PB.protocVersion := "3.15.6",
-      PB.deleteTargetDirectory := true,
-      PB.cacheArtifactResolution := true,
-      PB.cacheClassLoaders := true,
+      PB.protocVersion            := "3.15.6",
+      PB.deleteTargetDirectory    := true,
+      PB.cacheArtifactResolution  := true,
+      PB.cacheClassLoaders        := true,
       PB.generate / includeFilter := "*.proto",
       PB.generate / dependencyResolution := {
         val log = streams.value.log
@@ -245,7 +245,7 @@ object ProtocPlugin extends AutoPlugin {
   private[this] val protobufProjectSettings: Seq[Def.Setting[_]] =
     Seq(
       PB.externalIncludePath := target.value / "protobuf_external",
-      PB.externalSourcePath := target.value / "protobuf_external_src",
+      PB.externalSourcePath  := target.value / "protobuf_external_src",
       Compile / PB.protoSources += PB.externalSourcePath.value,
       PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
       PB.additionalDependencies := {
@@ -305,10 +305,10 @@ object ProtocPlugin extends AutoPlugin {
   // Settings that are applied at configuration (Compile, Test) scope.
   val protobufConfigSettings: Seq[Setting[_]] =
     Seq(
-      PB.recompile := false,
+      PB.recompile     := false,
       PB.protocOptions := Nil,
-      PB.targets := Nil,
-      PB.protoSources := Nil,
+      PB.targets       := Nil,
+      PB.protoSources  := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
       PB.manifestProcessing := true,
       PB.includePaths := (

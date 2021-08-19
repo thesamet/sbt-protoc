@@ -4,7 +4,7 @@ val checkDependency = taskKey[Unit]("")
 
 lazy val crossPlatform = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(
-    scalaVersion := "2.11.12",
+    scalaVersion         := "2.11.12",
     Compile / PB.targets := Seq(scalapb.gen() -> (Compile / sourceManaged).value)
   )
 
