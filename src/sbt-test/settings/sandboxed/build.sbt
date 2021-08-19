@@ -5,12 +5,13 @@ scalaVersion := "2.13.1"
 val scalaGen = SandboxedJvmGenerator.forModule(
   "scala",
   Artifact(
-    "com.thesamet.scalapb", "compilerplugin_2.12",
+    "com.thesamet.scalapb",
+    "compilerplugin_2.12",
     "0.9.6"
   ),
   "scalapb.ScalaPbCodeGenerator$",
   suggestedDependencies = Seq(
-      Artifact("com.thesamet.scalapb", "scalapb-runtime", "0.9.6", true)
+    Artifact("com.thesamet.scalapb", "scalapb-runtime", "0.9.6", true)
   )
 )
 

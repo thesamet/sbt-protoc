@@ -9,4 +9,6 @@ Project.inConfig(IntegrationTest)(sbtprotoc.ProtocPlugin.protobufConfigSettings)
 
 Compile / PB.targets := Seq(PB.gens.java(protobufVersion) -> (Compile / sourceManaged).value)
 
-IntegrationTest / PB.targets := Seq(PB.gens.java(protobufVersion) -> (IntegrationTest / sourceManaged).value)
+IntegrationTest / PB.targets := Seq(
+  PB.gens.java(protobufVersion) -> (IntegrationTest / sourceManaged).value
+)
