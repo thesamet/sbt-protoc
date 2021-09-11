@@ -258,3 +258,22 @@ Show proto files extracted and where there are coming from:
 sbt> set logLevel := Level.Debug
 sbt> protocUnpackDependencies
  ```
+ 
+IntelliJ IDEA BSP bug
+---------------------
+
+IntelliJ has a [bug](https://youtrack.jetbrains.com/issue/SCL-19517) where it only recognizes generated sources if there is at least one Scala class in the same package - otherwise you'll see red squiggles. As a workaround, you can configure your project to add a private empty class, e.g. like this:
+```scala
+Compile / sourceGenerators += Def.task {
+  // adapt this for your build:
+  val protoPackage = "org.example.proto.foo"
+  val scalaFile = (Compile/sourceManaged).value / "_ONLY_FOR_INTELLIJ.scala"
+  
+  IO.write(scalaFile,
+    s"""package $protoPackage
+      |
+      |private class _ONLY_FOR_INTELLIJ
+      |""".stripMargin)
+  Seq(scalaFile)
+}.taskValue
+```
