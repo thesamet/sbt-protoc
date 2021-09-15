@@ -2,7 +2,7 @@ import scalapb.compiler.Version.scalapbVersion
 
 val GrpcProtosArtifact = "com.google.api.grpc" % "grpc-google-common-protos" % "1.17.0"
 
-scalaVersion := "2.12.14"
+scalaVersion := "2.12.15"
 
 // This sub-project will hold the compiled Scala classes from the external
 // jar.
