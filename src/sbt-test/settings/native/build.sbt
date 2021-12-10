@@ -1,6 +1,6 @@
 Compile / PB.targets := Seq(
-  PB.gens.java                -> (Compile / sourceManaged).value,
-  PB.gens.plugin("grpc-java") -> (Compile / sourceManaged).value,
+  PB.gens.java(PB.protocVersion.value) -> (Compile / sourceManaged).value,
+  PB.gens.plugin("grpc-java")          -> (Compile / sourceManaged).value,
   (
     PB.gens.plugin("scala"),
     Seq()
