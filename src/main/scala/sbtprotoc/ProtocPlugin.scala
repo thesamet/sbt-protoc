@@ -50,6 +50,12 @@ object ProtocPlugin extends AutoPlugin {
       val protocOptions =
         SettingKey[Seq[String]]("protoc-options", "Additional options to be passed to protoc")
 
+      val protocOptionsFileNames =
+        SettingKey[Seq[String]](
+          "protoc-options",
+          "Sets the name for scalapb files with package wide options, defaults to \"scalapb-options.proto\""
+        )
+
       val protoSources =
         SettingKey[Seq[File]]("protoc-sources", "Directories to look for source files")
 
@@ -57,6 +63,12 @@ object ProtocPlugin extends AutoPlugin {
         SettingKey[Boolean](
           "protoc-manifest-processing",
           "Enable the automatic addition of scalapb compiler option files from the protoc compile scope"
+        )
+
+      val optionSearching =
+        SettingKey[Boolean](
+          "protoc-option-searching",
+          "Enable the automatic search of scalapb compiler option files with name \"scalapb-options.proto\" from the protoc compile scope"
         )
 
       val targets = SettingKey[Seq[Target]]("protoc-targets", "List of targets to generate")
@@ -305,12 +317,14 @@ object ProtocPlugin extends AutoPlugin {
   // Settings that are applied at configuration (Compile, Test) scope.
   val protobufConfigSettings: Seq[Setting[_]] =
     Seq(
-      PB.recompile     := false,
-      PB.protocOptions := Nil,
-      PB.targets       := Nil,
-      PB.protoSources  := Nil,
+      PB.recompile              := false,
+      PB.protocOptions          := Nil,
+      PB.protocOptionsFileNames := Seq("scalapb-options.proto"),
+      PB.targets                := Nil,
+      PB.protoSources           := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
       PB.manifestProcessing := true,
+      PB.optionSearching    := true,
       PB.includePaths := (
         PB.includePaths.?.value.getOrElse(Nil) ++
           PB.protoSources.value ++
@@ -478,7 +492,8 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def unpack(
       deps: Seq[File],
       extractTarget: File,
-      streams: TaskStreams
+      streams: TaskStreams,
+      protocOptionsFileNames: Set[String]
   ): Seq[(File, UnpackedDependency)] = {
     def cachedExtractDep(dep: File): Seq[File] = {
       val cached = FileFunction.cached(
@@ -500,14 +515,22 @@ object ProtocPlugin extends AutoPlugin {
     deps.map { dep =>
       val fileSet = cachedExtractDep(dep)
       dep ->
-        UnpackedDependency(fileSet, getOptionProtos(dep, extractTarget, fileSet))
+        UnpackedDependency(
+          fileSet,
+          getOptionProtos(dep, extractTarget, fileSet, protocOptionsFileNames)
+        )
     }
   }
 
   // Unpacked proto jars may contain a key in their manifest to tell us about
   // the generator options used to generate the sources. The option will be
   // sourced into ScalaPB.
-  def getOptionProtos(jar: File, extractTarget: File, fileSet: Seq[File]): Seq[File] = {
+  def getOptionProtos(
+      jar: File,
+      extractTarget: File,
+      fileSet: Seq[File],
+      modifierFileName: Set[String]
+  ): Seq[File] = {
     val jin = new JarInputStream(new FileInputStream(jar))
     try {
       val optionProtos = (for {
@@ -526,7 +549,7 @@ object ProtocPlugin extends AutoPlugin {
         }
       }
 
-      optionProtos
+      optionProtos ++ fileSet.filter(f => modifierFileName.contains(f.getName))
 
     } finally {
       jin.close()
@@ -716,12 +739,14 @@ object ProtocPlugin extends AutoPlugin {
       val extractedFiles = unpack(
         (ProtobufConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalIncludePath).value,
-        (key / streams).value
+        (key / streams).value,
+        PB.protocOptionsFileNames.value.toSet
       )
       val extractedSrcFiles = unpack(
         (ProtobufSrcConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalSourcePath).value,
-        (key / streams).value
+        (key / streams).value,
+        PB.protocOptionsFileNames.value.toSet
       )
       val unpackedDeps = UnpackedDependencies(
         (extractedFiles ++ extractedSrcFiles).toMap
