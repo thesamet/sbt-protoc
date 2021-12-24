@@ -3,7 +3,6 @@ package sbtprotoc
 import sbt._
 import Keys._
 import java.io.{File, FileInputStream, IOException}
-
 import protocbridge.{DescriptorSetGenerator, SandboxedJvmGenerator, Target, ProtocRunner}
 import sbt.librarymanagement.{CrossVersion, ModuleID}
 import sbt.plugins.JvmPlugin
@@ -573,6 +572,8 @@ object ProtocPlugin extends AutoPlugin {
       val targets   = (key / PB.targets).value
       val toInclude = (key / includeFilter).value
       val toExclude = (key / excludeFilter).value
+      val includePaths = (key / PB.includePaths).value
+
       val schemas = (key / PB.protoSources).value
         .toSet[File]
         .flatMap(srcDir =>
@@ -583,10 +584,19 @@ object ProtocPlugin extends AutoPlugin {
           val processManifests = (key / PB.manifestProcessing).value
           val dependencies     = (key / PB.unpackDependencies).value
 
+          val packageOptions = if (PB.optionSearching.value) {
+            val optionFileNames = (key / PB.protocOptionsFileNames).value.distinct
+            includePaths.flatMap(f =>
+              (f ** optionFileNames.reduce(_ || _)).filter(_.isFile).get().map(_.asFile)
+            )
+          } else {
+            Nil
+          }
+
           if (!processManifests) protos
           else {
             val optionProtos = dependencies.mappedFiles.values.flatMap(_.optionProtos)
-            protos ++ optionProtos
+            protos ++ optionProtos ++ packageOptions
           }
         case _ => Set.empty[File]
       }
@@ -670,7 +680,7 @@ object ProtocPlugin extends AutoPlugin {
 
       val arguments = Arguments(
         PB.protocVersion.value,
-        (key / PB.includePaths).value,
+        includePaths,
         protocOptions = (key / PB.protocOptions).value ++ nativePluginsArgs,
         deleteTargetDirectory = (key / PB.deleteTargetDirectory).value,
         targets = targets.map { target =>
