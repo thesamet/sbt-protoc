@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.6]
+* Update default protoc to 3.19.2.
+
 ## [1.0.5]
 * Add option `PB.manifestProcessing` (defaults to true) that allows you to
   opt-opt of the manifest processing feature of sbt-protoc that automatically
