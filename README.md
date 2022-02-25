@@ -82,6 +82,8 @@ libraryDependencies ++= Seq(
 )
 ```
 
+**Step 3: Put some protos in src/main/protobuf and compile**
+
 ## Download plugins that are available on maven repository
 
 To download an artifact and use it as a code generator plugin:
@@ -120,8 +122,6 @@ If you need to pass parameters to the plugin, it can be done as follows:
     Compile / PB.targets := Seq(
       (grpcWebGen, Seq("mode=grpcwebtext")) -> (Compile / sourceManaged).value / "js"
     )
-
-**Step 3: Put some protos in src/main/protobuf and compile**
 
 Migration notes
 ---------------
