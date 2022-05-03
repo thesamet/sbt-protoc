@@ -484,7 +484,7 @@ object ProtocPlugin extends AutoPlugin {
       val cached = FileFunction.cached(
         streams.cacheDirectory / dep.name,
         inStyle = FilesInfo.lastModified,
-        outStyle = FilesInfo.exists
+        outStyle = FilesInfo.hash
       ) { deps =>
         IO.createDirectory(extractTarget)
         deps.flatMap { dep =>
@@ -539,7 +539,7 @@ object ProtocPlugin extends AutoPlugin {
   private[this] val classloaderCache =
     new java.util.concurrent.ConcurrentHashMap[
       BridgeArtifact,
-      (FilesInfo[ModifiedFileInfo], URLClassLoader)
+      (FilesInfo[HashFileInfo], URLClassLoader)
     ]
 
   private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
@@ -607,7 +607,7 @@ object ProtocPlugin extends AutoPlugin {
       // stamped and compared with the previous stamp to reload the classloader upon changes. Artifact resolution is
       // memoized across invocations for the entire sbt session, unless cacheArtifactResolution is false.
       val stampedClassLoadersByArtifact
-          : Map[BridgeArtifact, (FilesInfo[ModifiedFileInfo], ClassLoader)] =
+          : Map[BridgeArtifact, (FilesInfo[HashFileInfo], ClassLoader)] =
         targets
           .collect { case Target(SandboxedJvmGenerator(_, artifact, _, _), _, _) => artifact }
           .distinct
@@ -617,7 +617,7 @@ object ProtocPlugin extends AutoPlugin {
               { (_, prevValue) =>
                 def stampClasspath(files: Seq[File]) =
                   // artifact paths can be JARs or directories, so a recursive stamp is needed
-                  FileInfo.lastModified(files.toSet[File].allPaths.get.toSet)
+                  FileInfo.hash(files.toSet[File].allPaths.get.toSet)
 
                 if (prevValue == null) {
                   // first time this classpath is requested since the start of sbt
@@ -676,7 +676,7 @@ object ProtocPlugin extends AutoPlugin {
       }
 
       import CacheImplicits._
-      type Stamp = (Arguments, Seq[FilesInfo[ModifiedFileInfo]])
+      type Stamp = (Arguments, Seq[FilesInfo[HashFileInfo]])
       val cachedCompile = Tracked.inputChanged[Stamp, Set[File]](
         cacheFile / "input"
       ) { case (inChanged, _) =>
@@ -706,7 +706,7 @@ object ProtocPlugin extends AutoPlugin {
         val sandboxedArtifactsStamps =
           stampedClassLoadersByArtifact.values.map(_._1).toSeq
         val inputStamp =
-          FileInfo.lastModified(schemas ++ arguments.includePaths.allPaths.get)
+          FileInfo.hash(schemas ++ arguments.includePaths.allPaths.get)
         cachedCompile((arguments, sandboxedArtifactsStamps :+ inputStamp)).toSeq
       }
     }
