@@ -331,7 +331,7 @@ object ProtocPlugin extends AutoPlugin {
         .value,
       PB.runProtoc := Def.taskDyn {
         val s = streams.value
-        if (PB.targets.value == Nil) {
+        if (PB.targets.value.isEmpty || schemasTask(PB.generate).value.isEmpty) {
           Def.task {
             // return a dummy instance that should never be evaluated
             protocbridge.ProtocRunner.fromFunction[Int] { (_, _) =>
@@ -542,31 +542,36 @@ object ProtocPlugin extends AutoPlugin {
       (FilesInfo[ModifiedFileInfo], URLClassLoader)
     ]
 
-  private[this] def sourceGeneratorTask(key: TaskKey[Seq[File]]): Def.Initialize[Task[Seq[File]]] =
-    Def.task {
-      val log       = (key / streams).value.log
-      val resolver  = (key / PB.artifactResolver).value
-      val cache     = (key / PB.cacheClassLoaders).value && (key / PB.cacheArtifactResolution).value
-      val targets   = (key / PB.targets).value
-      val toInclude = (key / includeFilter).value
-      val toExclude = (key / excludeFilter).value
-      val schemas = (key / PB.protoSources).value
-        .toSet[File]
-        .flatMap(srcDir =>
-          (srcDir ** (toInclude -- toExclude)).get
-            .map(_.getAbsoluteFile)
-        ) match {
-        case protos if protos.nonEmpty =>
-          val processManifests = (key / PB.manifestProcessing).value
-          val dependencies     = (key / PB.unpackDependencies).value
+  private[this] def schemasTask(key: TaskKey[_]): Def.Initialize[Task[Set[File]]] = Def.task {
+    val toInclude        = (key / includeFilter).value
+    val toExclude        = (key / excludeFilter).value
+    val processManifests = (key / PB.manifestProcessing).value
+    val dependencies     = (key / PB.unpackDependencies).value
+    val sources          = (key / PB.protoSources).value
 
-          if (!processManifests) protos
-          else {
-            val optionProtos = dependencies.mappedFiles.values.flatMap(_.optionProtos)
-            protos ++ optionProtos
-          }
-        case _ => Set.empty[File]
-      }
+    sources
+      .toSet[File]
+      .flatMap(srcDir =>
+        (srcDir ** (toInclude -- toExclude)).get
+          .map(_.getAbsoluteFile)
+      ) match {
+      case protos if protos.nonEmpty =>
+        if (!processManifests) protos
+        else {
+          val optionProtos = dependencies.mappedFiles.values.flatMap(_.optionProtos)
+          protos ++ optionProtos
+        }
+      case _ => Set.empty[File]
+    }
+  }
+
+  private[this] def sourceGeneratorTask(key: TaskKey[_]): Def.Initialize[Task[Seq[File]]] =
+    Def.task {
+      val log      = (key / streams).value.log
+      val resolver = (key / PB.artifactResolver).value
+      val cache    = (key / PB.cacheClassLoaders).value && (key / PB.cacheArtifactResolution).value
+      val targets  = (key / PB.targets).value
+      val schemas  = schemasTask(key).value
 
       // Include Scala binary version like "_2.11" for cross building.
       val cacheFile =
