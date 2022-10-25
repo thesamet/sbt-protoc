@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.0.7]
+* Update default protoc to 3.21.7
+
 ## [1.0.6]
 * Update default protoc to 3.19.2.
 
