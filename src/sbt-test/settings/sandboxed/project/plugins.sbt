@@ -9,5 +9,5 @@
 }
 
 libraryDependencies ++= Seq(
-  "com.thesamet.scalapb" %% "protoc-bridge" % "0.8.4"
+  "com.thesamet.scalapb" %% "protoc-bridge" % "0.9.6"
 )
