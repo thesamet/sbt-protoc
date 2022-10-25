@@ -4,9 +4,9 @@ description := "SBT plugin for generating code from Protocol Buffer using protoc
 
 scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args")
 
-scalacOptions += "-target:jvm-1.8"
+scalacOptions += "-release:8"
 
-scalaVersion := "2.12.16"
+scalaVersion := "2.12.17"
 
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.1")
 
