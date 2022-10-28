@@ -1,4 +1,4 @@
-val protobufVersion = "3.11.4"
+val protobufVersion = "3.21.7"
 
 libraryDependencies += "com.google.protobuf" % "protobuf-java" % protobufVersion % "protobuf"
 
