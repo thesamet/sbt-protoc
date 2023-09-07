@@ -106,6 +106,11 @@ object ProtocPlugin extends AutoPlugin {
       )
       val recompile = TaskKey[Boolean]("protoc-recompile")
 
+      val importRoot = SettingKey[File](
+        "protobuf-import-root",
+        "Directory to use when resolving .proto import directives."
+      )
+
       val Target       = protocbridge.Target
       val gens         = protocbridge.gens
       val ProtocPlugin = "protoc-plugin"
@@ -313,7 +318,10 @@ object ProtocPlugin extends AutoPlugin {
       PB.manifestProcessing := true,
       PB.includePaths := (
         PB.includePaths.?.value.getOrElse(Nil) ++
-          PB.protoSources.value ++
+          (PB.importRoot.?.value match {
+            case None       => PB.protoSources.value
+            case Some(root) => Seq(root)
+          }) ++
           Seq(PB.externalIncludePath.value, PB.externalSourcePath.value) ++
           protocIncludeDependencies.value,
       ).distinct,
