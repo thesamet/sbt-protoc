@@ -4,7 +4,7 @@ import scalapb.compiler.Version.scalapbVersion
 val sharedSettings = Seq(
   name                      := "example",
   version                   := "0.1.0",
-  scalaVersion              := "2.11.12",
+  scalaVersion              := "2.13.12",
   Compile / PB.protoSources := Seq((ThisBuild / baseDirectory).value / "src" / "main" / "protobuf"),
   Compile / PB.targets := Seq(
     scalapb.gen() -> (Compile / sourceManaged).value / "protos"
@@ -20,9 +20,9 @@ lazy val example = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(sharedSettings)
-  .jsSettings(crossScalaVersions := Seq("2.12.16", "2.13.4"))
-  .jvmSettings(crossScalaVersions := Seq("2.12.16", "2.13.4"))
-  .nativeSettings(crossScalaVersions := Seq("2.11.12"))
+  .jsSettings(crossScalaVersions := Seq("2.12.18", "2.13.12"))
+  .jvmSettings(crossScalaVersions := Seq("2.12.18", "2.13.12"))
+  .nativeSettings(crossScalaVersions := Seq("2.12.18", "2.13.12"))
 
 lazy val exampleJS     = example.js
 lazy val exampleJVM    = example.jvm
