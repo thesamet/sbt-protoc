@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        os: ["ubuntu-20.04", "macos-latest", "windows-latest"]
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
 
     steps:
     - uses: actions/checkout@v1
@@ -22,10 +22,6 @@ jobs:
           ~/.ivy2/cache
           ~/.cache/coursier
         key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-    - name: Install tools for Native
-      if: ${{runner.os != 'Windows' }}
-      run: |
-        ./ci_setup.sh
     - name: Remove native tests (Windows only)
       if: ${{ runner.os == 'Windows' }}
       run: |
@@ -46,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-20.04", "macos-latest", "windows-latest"]
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
         scripted-sbt: ["1.2.8", "1.3.13", "project"]
 
     steps:
@@ -62,10 +58,6 @@ jobs:
           ~/.ivy2/cache
           ~/.cache/coursier
         key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
-    - name: Install tools for Native
-      if: ${{runner.os != 'Windows' }}
-      run: |
-        ./ci_setup.sh
     - name: Compile and run scripted tests with older version
       if: ${{ matrix.scripted-sbt != 'project' }}
       env:
