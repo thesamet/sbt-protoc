@@ -20,9 +20,9 @@ lazy val example = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .in(file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(sharedSettings)
-  .jsSettings(crossScalaVersions := Seq("2.12.18", "2.13.12"))
-  .jvmSettings(crossScalaVersions := Seq("2.12.18", "2.13.12"))
-  .nativeSettings(crossScalaVersions := Seq("2.12.18", "2.13.12"))
+  .jsSettings(crossScalaVersions := Seq("2.13.12", "2.13.12"))
+  .jvmSettings(crossScalaVersions := Seq("2.13.12", "2.13.12"))
+  .nativeSettings(crossScalaVersions := Seq("2.13.12", "2.13.12"))
 
 lazy val exampleJS     = example.js
 lazy val exampleJVM    = example.jvm
