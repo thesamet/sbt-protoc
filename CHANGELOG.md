@@ -2,6 +2,7 @@
 
 ## [1.0.7]
 * Update default protoc to 3.21.7
+* For nix-os: support executing statically linked protoc (for versions >=3.23.0)
 
 ## [1.0.6]
 * Update default protoc to 3.19.2.
