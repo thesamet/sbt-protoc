@@ -6,7 +6,7 @@ scalacOptions := Seq("-deprecation", "-unchecked", "-Xlint", "-Yno-adapted-args"
 
 scalacOptions += "-release:8"
 
-scalaVersion := "2.12.17"
+scalaVersion := "2.12.18"
 
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.1")
 
