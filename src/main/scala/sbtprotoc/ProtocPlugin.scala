@@ -292,7 +292,7 @@ object ProtocPlugin extends AutoPlugin {
             s"""PB.protocVersion must contain a dot-separated version number. For example: "3.13.0". Got: '${PB.protocVersion.value}'"""
           )
         }
-        ("com.google.protobuf" % "protoc" % version) asProtocBinary (),
+        ("com.google.protobuf" % "protoc" % version) asProtocBinary ()
       },
       PB.protocExecutable := {
         scala.concurrent.Await.result(
