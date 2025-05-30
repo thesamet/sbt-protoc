@@ -173,11 +173,11 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
     Seq(
-      PB.protocVersion            := "3.21.7",
-      PB.deleteTargetDirectory    := true,
-      PB.cacheArtifactResolution  := true,
-      PB.cacheClassLoaders        := true,
-      PB.generate / includeFilter := "*.proto",
+      PB.protocVersion                   := "3.21.7",
+      PB.deleteTargetDirectory           := true,
+      PB.cacheArtifactResolution         := true,
+      PB.cacheClassLoaders               := true,
+      PB.generate / includeFilter        := "*.proto",
       PB.generate / dependencyResolution := {
         val log = streams.value.log
 
@@ -247,7 +247,7 @@ object ProtocPlugin extends AutoPlugin {
       PB.externalIncludePath := target.value / "protobuf_external",
       PB.externalSourcePath  := target.value / "protobuf_external_src",
       Compile / PB.protoSources += PB.externalSourcePath.value,
-      PB.unpackDependencies := unpackDependenciesTask(PB.unpackDependencies).value,
+      PB.unpackDependencies     := unpackDependenciesTask(PB.unpackDependencies).value,
       PB.additionalDependencies := {
         val libs = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
         platformDepsCrossVersion.?.value match {
@@ -311,7 +311,7 @@ object ProtocPlugin extends AutoPlugin {
       PB.protoSources  := Nil,
       PB.protoSources += sourceDirectory.value / "protobuf",
       PB.manifestProcessing := true,
-      PB.includePaths := (
+      PB.includePaths       := (
         PB.includePaths.?.value.getOrElse(Nil) ++
           PB.protoSources.value ++
           Seq(PB.externalIncludePath.value, PB.externalSourcePath.value) ++
@@ -585,12 +585,12 @@ object ProtocPlugin extends AutoPlugin {
       nativePlugins.foreach { dep => dep.data.setExecutable(true) }
 
       val nativePluginsArgs = nativePlugins.flatMap { a =>
-        val dep = a.get(artifact.key).get
+        val dep        = a.get(artifact.key).get
         val pluginPath = {
           ProtocRunner
             .maybeNixDynamicLinker()
             .filterNot(_ => a.data.getName.endsWith(".sh")) match {
-            case None => a.data.absolutePath
+            case None         => a.data.absolutePath
             case Some(linker) =>
               IO.withTemporaryFile("nix", dep.name, keepFile = true) { f =>
                 f.deleteOnExit()
@@ -631,7 +631,7 @@ object ProtocPlugin extends AutoPlugin {
                   (stampClasspath(resolved), sandboxedClassLoader(resolved))
                 } else {
                   val (prevFilesInfo, prevClassLoader) = prevValue
-                  val currentFiles =
+                  val currentFiles                     =
                     if (!cache) resolver(artifact)
                     else {
                       // use classpath as referenced by the previous classloader (which may contain directories)
