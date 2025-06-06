@@ -8,6 +8,8 @@
   else addSbtPlugin("com.thesamet" % "sbt-protoc" % pluginVersion)
 }
 
+libraryDependencySchemes +=  "com.thesamet.scalapb" %% "protoc-bridge" % VersionScheme.Always
+
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "compilerplugin" % "0.9.8"
 )
