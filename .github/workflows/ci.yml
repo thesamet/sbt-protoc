@@ -15,7 +15,7 @@ jobs:
       with:
         java-version: 8
     - name: Mount caches
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ~/.sbt
@@ -51,7 +51,7 @@ jobs:
       with:
         java-version: 11
     - name: Mount caches
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           ~/.sbt
