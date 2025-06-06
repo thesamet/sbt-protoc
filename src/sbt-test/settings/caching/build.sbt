@@ -16,7 +16,7 @@ setReadable := {
   import complete.DefaultParsers._
   val (file, readable) = (fileParser((ThisBuild / baseDirectory).value) ~ (Space ~> Bool)).parsed
   if (protocbridge.SystemDetector.detectedClassifier().startsWith("windows")) {
-    val view = Files.getFileAttributeView(file.toPath, classOf[AclFileAttributeView])
+    val view        = Files.getFileAttributeView(file.toPath, classOf[AclFileAttributeView])
     val updatedAcls = view.getAcl.asScala.map { acl =>
       val permissions = acl.permissions
       if (readable) permissions.add(AclEntryPermission.READ_DATA)
