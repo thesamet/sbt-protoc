@@ -8,7 +8,7 @@ scalacOptions += "-release:8"
 
 scalaVersion := "2.12.20"
 
-addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.1")
+addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.2")
 
 libraryDependencies ++= Seq(
   "com.thesamet.scalapb" %% "protoc-bridge" % "0.9.9"
