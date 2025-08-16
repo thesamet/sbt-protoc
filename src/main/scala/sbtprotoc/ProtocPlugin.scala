@@ -1,7 +1,7 @@
 package sbtprotoc
 
-import sbt._
-import Keys._
+import sbt.*
+import Keys.*
 import java.io.{File, FileInputStream, IOException}
 
 import protocbridge.{DescriptorSetGenerator, SandboxedJvmGenerator, Target, ProtocRunner}
@@ -14,8 +14,8 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformD
 import java.net.URLClassLoader
 import java.util.jar.JarInputStream
 import sbt.librarymanagement.DependencyResolution
-import protocbridge.{Artifact => BridgeArtifact}
-import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache, PluginGenerator}
+import protocbridge.Artifact as BridgeArtifact
+import protocbridge.{SystemDetector as BridgeSystemDetector, FileCache, PluginGenerator}
 import scala.concurrent.{Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -169,9 +169,9 @@ object ProtocPlugin extends AutoPlugin {
 
   override def projectConfigurations: Seq[Configuration] = Seq(ProtobufConfig)
 
-  override def globalSettings: Seq[Def.Setting[_]] = protobufGlobalSettings
+  override def globalSettings: Seq[Def.Setting[?]] = protobufGlobalSettings
 
-  private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
+  private[this] def protobufGlobalSettings: Seq[Def.Setting[?]] =
     Seq(
       PB.protocVersion                   := "3.21.7",
       PB.deleteTargetDirectory           := true,
@@ -196,7 +196,7 @@ object ProtocPlugin extends AutoPlugin {
               "instead of relying on the default."
           )
 
-          import sbt.librarymanagement.ivy._
+          import sbt.librarymanagement.ivy.*
           val ivyConfig = InlineIvyConfiguration()
             .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
             .withLog(log)
@@ -238,11 +238,11 @@ object ProtocPlugin extends AutoPlugin {
       )
     )
 
-  override def projectSettings: Seq[Def.Setting[_]] =
+  override def projectSettings: Seq[Def.Setting[?]] =
     Seq(Compile, Test).flatMap(inConfig(_)(protobufConfigSettings)) ++
       protobufProjectSettings
 
-  private[this] val protobufProjectSettings: Seq[Def.Setting[_]] =
+  private[this] val protobufProjectSettings: Seq[Def.Setting[?]] =
     Seq(
       PB.externalIncludePath := target.value / "protobuf_external",
       PB.externalSourcePath  := target.value / "protobuf_external_src",
@@ -303,7 +303,7 @@ object ProtocPlugin extends AutoPlugin {
     )
 
   // Settings that are applied at configuration (Compile, Test) scope.
-  val protobufConfigSettings: Seq[Setting[_]] =
+  val protobufConfigSettings: Seq[Setting[?]] =
     Seq(
       PB.recompile     := false,
       PB.protocOptions := Nil,
@@ -542,7 +542,7 @@ object ProtocPlugin extends AutoPlugin {
       (FilesInfo[ModifiedFileInfo], URLClassLoader)
     ]
 
-  private[this] def schemasTask(key: TaskKey[_]): Def.Initialize[Task[Set[File]]] = Def.task {
+  private[this] def schemasTask(key: TaskKey[?]): Def.Initialize[Task[Set[File]]] = Def.task {
     val toInclude        = (key / includeFilter).value
     val toExclude        = (key / excludeFilter).value
     val processManifests = (key / PB.manifestProcessing).value
@@ -566,7 +566,7 @@ object ProtocPlugin extends AutoPlugin {
     }
   }
 
-  private[this] def sourceGeneratorTask(key: TaskKey[_]): Def.Initialize[Task[Seq[File]]] =
+  private[this] def sourceGeneratorTask(key: TaskKey[?]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
       val log      = (key / streams).value.log
       val resolver = (key / PB.artifactResolver).value
@@ -681,7 +681,7 @@ object ProtocPlugin extends AutoPlugin {
         )
       }
 
-      import CacheImplicits._
+      import CacheImplicits.*
       type Stamp = (Arguments, Seq[FilesInfo[ModifiedFileInfo]])
       val cachedCompile = Tracked.inputChanged[Stamp, Set[File]](
         cacheFile / "input"
