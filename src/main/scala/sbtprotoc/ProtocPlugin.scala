@@ -173,7 +173,7 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
     Seq(
-      PB.protocVersion                   := "3.21.7",
+      PB.protocVersion                   := "4.32.0",
       PB.deleteTargetDirectory           := true,
       PB.cacheArtifactResolution         := true,
       PB.cacheClassLoaders               := true,
