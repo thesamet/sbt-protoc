@@ -24,7 +24,7 @@ object ProtocPlugin extends AutoPlugin {
   sealed trait CacheStyle
   object CacheStyle {
     case object LastModified extends CacheStyle
-    case object ContentHash extends CacheStyle
+    case object ContentHash  extends CacheStyle
   }
 
   object autoImport {
@@ -500,7 +500,7 @@ object ProtocPlugin extends AutoPlugin {
   ): Seq[(File, UnpackedDependency)] = {
     def cachedExtractDep(dep: File): Seq[File] = {
       val inStyle = if (useContentHash) FilesInfo.hash else FilesInfo.lastModified
-      val cached = FileFunction.cached(
+      val cached  = FileFunction.cached(
         streams.cacheDirectory / dep.name,
         inStyle = inStyle,
         outStyle = FilesInfo.exists
@@ -734,14 +734,14 @@ object ProtocPlugin extends AutoPlugin {
         log.debug("Ignoring cache (PB.recompile := true)")
         compileProto().toSeq
       } else {
-        val useContentHash = (key / PB.cacheStyle).value == CacheStyle.ContentHash
+        val useContentHash           = (key / PB.cacheStyle).value == CacheStyle.ContentHash
         val sandboxedArtifactsStamps =
           stampedClassLoadersByArtifact.values.map(_._1).toSeq
         val allInputFiles = schemas ++ arguments.includePaths.allPaths.get()
 
         if (useContentHash) {
           val protoInputFiles = allInputFiles.filter(_.getName.endsWith(".proto"))
-          val inputStamp = FileInfo.hash(protoInputFiles)
+          val inputStamp      = FileInfo.hash(protoInputFiles)
           runCachedCompile("hash", (arguments, sandboxedArtifactsStamps, inputStamp))
         } else {
           val inputStamp = FileInfo.lastModified(allInputFiles)
