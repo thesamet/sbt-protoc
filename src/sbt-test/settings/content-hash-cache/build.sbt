@@ -1,0 +1,24 @@
+Compile / PB.targets := Seq(
+  PB.gens.java -> (Compile / sourceManaged).value
+)
+
+Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
+
+val protocCount = taskKey[Int]("Number of protoc invocations")
+protocCount := ProtocCount.get()
+
+Compile / PB.runProtoc := {
+  val original = (Compile / PB.runProtoc).value
+  args => {
+    ProtocCount.incrementAndGet()
+    original.run(args)
+  }
+}
+
+val assertProtocCount = inputKey[Unit]("Assert protoc invocation count")
+assertProtocCount := {
+  import complete.DefaultParsers._
+  val expected = (Space ~> IntBasic).parsed
+  val actual = ProtocCount.get()
+  assert(actual == expected, s"Expected protoc count $expected but got $actual")
+}

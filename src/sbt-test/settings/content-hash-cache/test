@@ -1,0 +1,56 @@
+# Tests for PB.cacheStyle := PB.CacheStyle.ContentHash
+# With content-hash caching, touching a file (changing mtime without changing content)
+# should NOT invalidate the cache, unlike the default lastModified strategy.
+# We use a protoc invocation counter to verify cache behavior.
+
+# Initial compile — protoc must run (count: 0 -> 1)
+> protocGenerate
+> assertProtocCount 1
+
+# Second run, no changes — protoc should NOT re-run (count stays 1)
+> protocGenerate
+> assertProtocCount 1
+
+# Touch the file (change mtime, same content) — protoc should NOT re-run (count stays 1)
+$ touch src/main/protobuf/foo.proto
+> protocGenerate
+> assertProtocCount 1
+
+# Actually change the file content — protoc MUST re-run (count: 1 -> 2)
+$ copy-file changes/foo-v2.proto src/main/protobuf/foo.proto
+> protocGenerate
+> assertProtocCount 2
+
+# Second run after content change — cached (count stays 2)
+> protocGenerate
+> assertProtocCount 2
+
+# Touch again after content change — still cached (count stays 2)
+$ touch src/main/protobuf/foo.proto
+> protocGenerate
+> assertProtocCount 2
+
+# Delete output file — protoc MUST re-run (count: 2 -> 3)
+$ delete target/scala-2.12/src_managed/main/mypkg/Foo.java
+> protocGenerate
+> assertProtocCount 3
+
+# Change protoc version — protoc MUST re-run (count: 3 -> 4)
+> 'set PB.protocVersion := "3.12.0"'
+> protocGenerate
+> assertProtocCount 4
+
+# New .proto file — protoc MUST re-run (count: 4 -> 5)
+$ touch src/main/protobuf/bar.proto
+> protocGenerate
+> assertProtocCount 5
+
+# Touch the new file — still cached (count stays 5)
+$ touch src/main/protobuf/bar.proto
+> protocGenerate
+> assertProtocCount 5
+
+# Delete .proto file — protoc MUST re-run (count: 5 -> 6)
+$ delete src/main/protobuf/bar.proto
+> protocGenerate
+> assertProtocCount 6

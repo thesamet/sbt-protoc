@@ -20,6 +20,13 @@ import scala.concurrent.{Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object ProtocPlugin extends AutoPlugin {
+
+  sealed trait CacheStyle
+  object CacheStyle {
+    case object LastModified extends CacheStyle
+    case object ContentHash extends CacheStyle
+  }
+
   object autoImport {
     object PB {
       val includePaths = SettingKey[Seq[File]](
@@ -106,6 +113,15 @@ object ProtocPlugin extends AutoPlugin {
       )
       val recompile = TaskKey[Boolean]("protoc-recompile")
 
+      val cacheStyle = SettingKey[CacheStyle](
+        "protoc-cache-style",
+        "Caching strategy for proto file change detection. " +
+          "LastModified (default) uses file timestamps. " +
+          "ContentHash uses file content hashes, which is more reliable in CI environments " +
+          "where timestamps are not preserved across jobs."
+      )
+
+      val CacheStyle   = sbtprotoc.ProtocPlugin.CacheStyle
       val Target       = protocbridge.Target
       val gens         = protocbridge.gens
       val ProtocPlugin = "protoc-plugin"
@@ -177,6 +193,7 @@ object ProtocPlugin extends AutoPlugin {
       PB.deleteTargetDirectory           := true,
       PB.cacheArtifactResolution         := true,
       PB.cacheClassLoaders               := true,
+      PB.cacheStyle                      := CacheStyle.LastModified,
       PB.generate / includeFilter        := "*.proto",
       PB.generate / dependencyResolution := {
         val log = streams.value.log
@@ -478,12 +495,14 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def unpack(
       deps: Seq[File],
       extractTarget: File,
-      streams: TaskStreams
+      streams: TaskStreams,
+      useContentHash: Boolean
   ): Seq[(File, UnpackedDependency)] = {
     def cachedExtractDep(dep: File): Seq[File] = {
+      val inStyle = if (useContentHash) FilesInfo.hash else FilesInfo.lastModified
       val cached = FileFunction.cached(
         streams.cacheDirectory / dep.name,
-        inStyle = FilesInfo.lastModified,
+        inStyle = inStyle,
         outStyle = FilesInfo.exists
       ) { deps =>
         IO.createDirectory(extractTarget)
@@ -682,52 +701,69 @@ object ProtocPlugin extends AutoPlugin {
       }
 
       import CacheImplicits._
-      type Stamp = (Arguments, Seq[FilesInfo[ModifiedFileInfo]])
-      val cachedCompile = Tracked.inputChanged[Stamp, Set[File]](
-        cacheFile / "input"
-      ) { case (inChanged, _) =>
-        Tracked.diffOutputs(
-          cacheFile / "output",
-          FileInfo.exists
-        ) { outDiff: ChangeReport[File] =>
-          if (inChanged || outDiff.modified.nonEmpty) {
-            log.debug {
-              val inputInvalidation =
-                if (inChanged) Seq("input changed")
-                else Seq()
-              val outputInvalidation =
-                if (outDiff.modified.nonEmpty) Seq(s"output files changed ${outDiff.modified}")
-                else Seq()
-              s"Invalidating cache (${(inputInvalidation ++ outputInvalidation).mkString(" and ")})"
-            }
-            compileProto()
-          } else outDiff.checked
+
+      def invalidationLog(inChanged: Boolean, outDiff: ChangeReport[File]): Unit =
+        log.debug {
+          val inputInvalidation =
+            if (inChanged) Seq("input changed")
+            else Seq()
+          val outputInvalidation =
+            if (outDiff.modified.nonEmpty) Seq(s"output files changed ${outDiff.modified}")
+            else Seq()
+          s"Invalidating cache (${(inputInvalidation ++ outputInvalidation).mkString(" and ")})"
         }
+
+      def runCachedCompile[S: sjsonnew.JsonFormat](cacheSuffix: String, stamp: S): Seq[File] = {
+        val cachedCompile = Tracked.inputChanged[S, Set[File]](
+          cacheFile / cacheSuffix
+        ) { case (inChanged, _) =>
+          Tracked.diffOutputs(
+            cacheFile / "output",
+            FileInfo.exists
+          ) { outDiff: ChangeReport[File] =>
+            if (inChanged || outDiff.modified.nonEmpty) {
+              invalidationLog(inChanged, outDiff)
+              compileProto()
+            } else outDiff.checked
+          }
+        }
+        cachedCompile(stamp).toSeq
       }
 
       if (PB.recompile.value) {
         log.debug("Ignoring cache (PB.recompile := true)")
         compileProto().toSeq
       } else {
+        val useContentHash = (key / PB.cacheStyle).value == CacheStyle.ContentHash
         val sandboxedArtifactsStamps =
           stampedClassLoadersByArtifact.values.map(_._1).toSeq
-        val inputStamp =
-          FileInfo.lastModified(schemas ++ arguments.includePaths.allPaths.get())
-        cachedCompile((arguments, sandboxedArtifactsStamps :+ inputStamp)).toSeq
+        val allInputFiles = schemas ++ arguments.includePaths.allPaths.get()
+
+        if (useContentHash) {
+          val protoInputFiles = allInputFiles.filter(_.getName.endsWith(".proto"))
+          val inputStamp = FileInfo.hash(protoInputFiles)
+          runCachedCompile("hash", (arguments, sandboxedArtifactsStamps, inputStamp))
+        } else {
+          val inputStamp = FileInfo.lastModified(allInputFiles)
+          runCachedCompile("input", (arguments, sandboxedArtifactsStamps, inputStamp))
+        }
       }
     }
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
+      val useContentHash = (key / PB.cacheStyle).value == CacheStyle.ContentHash
       val extractedFiles = unpack(
         (ProtobufConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalIncludePath).value,
-        (key / streams).value
+        (key / streams).value,
+        useContentHash
       )
       val extractedSrcFiles = unpack(
         (ProtobufSrcConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalSourcePath).value,
-        (key / streams).value
+        (key / streams).value,
+        useContentHash
       )
       val unpackedDeps = UnpackedDependencies(
         (extractedFiles ++ extractedSrcFiles).toMap
