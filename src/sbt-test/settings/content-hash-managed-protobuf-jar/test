@@ -1,0 +1,23 @@
+# Tests PB.cacheStyle := PB.CacheStyle.ContentHash for protobuf dependency jars on managedClasspath.
+
+> writeDepJar v1
+> protocGenerate
+> assertProtocCount 1
+
+> protocGenerate
+> assertProtocCount 1
+
+$ touch deps/dep.jar
+> protocGenerate
+> assertProtocCount 1
+
+> writeDepJar v2
+> protocGenerate
+> assertProtocCount 2
+
+> protocGenerate
+> assertProtocCount 2
+
+$ touch deps/dep.jar
+> protocGenerate
+> assertProtocCount 2

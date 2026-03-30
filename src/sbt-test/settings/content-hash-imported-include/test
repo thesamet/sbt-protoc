@@ -1,0 +1,22 @@
+# Tests PB.cacheStyle := PB.CacheStyle.ContentHash for imported protos from an external include path.
+
+> protocGenerate
+> assertProtocCount 1
+
+> protocGenerate
+> assertProtocCount 1
+
+$ touch external/shared.proto
+> protocGenerate
+> assertProtocCount 1
+
+$ copy-file changes/shared-v2.proto external/shared.proto
+> protocGenerate
+> assertProtocCount 2
+
+> protocGenerate
+> assertProtocCount 2
+
+$ touch external/shared.proto
+> protocGenerate
+> assertProtocCount 2

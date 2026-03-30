@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package mypkg;
+
+message Shared {
+  string name = 1;
+}
