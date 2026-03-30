@@ -9,9 +9,9 @@ protocCount := ProtocCount.get()
 
 Compile / PB.runProtoc := {
   val original = (Compile / PB.runProtoc).value
-  args => {
+  (args, extraEnv) => {
     ProtocCount.incrementAndGet()
-    original.run(args)
+    original.run(args, extraEnv)
   }
 }
 

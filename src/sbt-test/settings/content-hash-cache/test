@@ -31,7 +31,7 @@ $ touch src/main/protobuf/foo.proto
 > assertProtocCount 2
 
 # Delete output file — protoc MUST re-run (count: 2 -> 3)
-$ delete target/scala-2.12/src_managed/main/mypkg/Foo.java
+$ delete target/scala-2.12/src_managed/main/mypkg/FooOuterClass.java
 > protocGenerate
 > assertProtocCount 3
 
