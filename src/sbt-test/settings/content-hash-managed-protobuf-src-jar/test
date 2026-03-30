@@ -1,18 +1,17 @@
-# Tests PB.cacheStyle := PB.CacheStyle.ContentHash for protobuf dependency jars on managedClasspath.
-# The main source imports dep/dep.proto from the unpacked managed dependency, so this is also
-# an end-to-end import-from-unpacked-dependency scenario.
+# Tests PB.cacheStyle := PB.CacheStyle.ContentHash for protobuf-src dependency jars on managedClasspath.
+# The main source imports dep/dep.proto from the unpacked protobuf-src dependency.
 
 > writeDepJar v1
 > protocGenerate
 > assertProtocCount 1
 > assertUnpackCount 1
-> assertFooReferencesDep
+> assertDepSourceGenerated
 
 > protocGenerate
 > assertProtocCount 1
 > assertUnpackCount 1
 
-$ touch deps/dep.jar
+$ touch deps/dep-src.jar
 > protocGenerate
 > assertProtocCount 1
 > assertUnpackCount 1
@@ -21,13 +20,13 @@ $ touch deps/dep.jar
 > protocGenerate
 > assertProtocCount 2
 > assertUnpackCount 2
-> assertFooReferencesDep
+> assertDepSourceGenerated
 
 > protocGenerate
 > assertProtocCount 2
 > assertUnpackCount 2
 
-$ touch deps/dep.jar
+$ touch deps/dep-src.jar
 > protocGenerate
 > assertProtocCount 2
 > assertUnpackCount 2

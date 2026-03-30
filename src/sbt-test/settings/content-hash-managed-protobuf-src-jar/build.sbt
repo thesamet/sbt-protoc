@@ -1,11 +1,11 @@
-import sbtprotoc.ProtocPlugin.ProtobufConfig
+import sbtprotoc.ProtocPlugin.ProtobufSrcConfig
 
 Compile / PB.targets := Seq(
   PB.gens.java -> (Compile / sourceManaged).value
 )
 
 Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
-Compile / PB.externalIncludePath := baseDirectory.value / "target" / "protobuf_external"
+Compile / PB.externalSourcePath := baseDirectory.value / "target" / "protobuf_external_src"
 
 val unpackHookFile = new File("target/unpack-hook.log").getAbsoluteFile
 val _ = {
@@ -13,12 +13,12 @@ val _ = {
   System.setProperty("sbtprotoc.test.unpackHookFile", unpackHookFile.getAbsolutePath)
 }
 
-val depJar = settingKey[File]("Path to the local protobuf dependency jar")
-depJar := baseDirectory.value / "deps" / "dep.jar"
+val depJar = settingKey[File]("Path to the local protobuf-src dependency jar")
+depJar := baseDirectory.value / "deps" / "dep-src.jar"
 
-ProtobufConfig / PB.unpackDependencies / managedClasspath := Seq(Attributed.blank(depJar.value))
+ProtobufSrcConfig / PB.unpackDependencies / managedClasspath := Seq(Attributed.blank(depJar.value))
 
-val writeDepJar = inputKey[Unit]("Writes the protobuf dependency jar")
+val writeDepJar = inputKey[Unit]("Writes the protobuf-src dependency jar")
 writeDepJar := {
   import complete.DefaultParsers._
   val version   = (Space ~> StringBasic).parsed
@@ -61,9 +61,8 @@ assertProtocCount := {
   assert(actual == expected, s"Expected protoc count $expected but got $actual")
 }
 
-val assertFooReferencesDep = taskKey[Unit]("Assert generated Foo references dep.Dep")
-assertFooReferencesDep := {
-  val generated = (Compile / sourceManaged).value / "mypkg" / "FooOuterClass.java"
-  val contents  = IO.read(generated)
-  assert(contents.contains("dep.Dep"), s"Expected $generated to reference dep.Dep")
+val assertDepSourceGenerated = taskKey[Unit]("Assert protobuf-src dependency generated its own source")
+assertDepSourceGenerated := {
+  val generated = (Compile / sourceManaged).value / "dep" / "DepOuterClass.java"
+  assert(generated.exists(), s"Expected generated source for protobuf-src dependency at $generated")
 }

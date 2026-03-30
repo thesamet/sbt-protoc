@@ -21,6 +21,15 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object ProtocPlugin extends AutoPlugin {
 
+  private[sbtprotoc] object TestHooks {
+    private val UnpackHookFileProperty = "sbtprotoc.test.unpackHookFile"
+
+    def recordUnpackExecution(dep: File): Unit =
+      Option(System.getProperty(UnpackHookFileProperty)).foreach { fileName =>
+        IO.append(file(fileName), s"${dep.getAbsolutePath}\n")
+      }
+  }
+
   sealed trait CacheStyle
   object CacheStyle {
     case object LastModified extends CacheStyle
@@ -496,15 +505,19 @@ object ProtocPlugin extends AutoPlugin {
       deps: Seq[File],
       extractTarget: File,
       streams: TaskStreams,
-      useContentHash: Boolean
+      cacheStyle: CacheStyle
   ): Seq[(File, UnpackedDependency)] = {
     def cachedExtractDep(dep: File): Seq[File] = {
-      val inStyle = if (useContentHash) FilesInfo.hash else FilesInfo.lastModified
-      val cached  = FileFunction.cached(
+      val inStyle = cacheStyle match {
+        case CacheStyle.ContentHash  => FilesInfo.hash
+        case CacheStyle.LastModified => FilesInfo.lastModified
+      }
+      val cached = FileFunction.cached(
         streams.cacheDirectory / dep.name,
         inStyle = inStyle,
         outStyle = FilesInfo.exists
       ) { deps =>
+        deps.foreach(TestHooks.recordUnpackExecution)
         IO.createDirectory(extractTarget)
         deps.flatMap { dep =>
           val set = IO.unzip(dep, extractTarget, "*.proto")
@@ -752,18 +765,18 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
-      val useContentHash = (key / PB.cacheStyle).value == CacheStyle.ContentHash
+      val cacheStyle     = (Compile / PB.cacheStyle).value
       val extractedFiles = unpack(
         (ProtobufConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalIncludePath).value,
         (key / streams).value,
-        useContentHash
+        cacheStyle
       )
       val extractedSrcFiles = unpack(
         (ProtobufSrcConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalSourcePath).value,
         (key / streams).value,
-        useContentHash
+        cacheStyle
       )
       val unpackedDeps = UnpackedDependencies(
         (extractedFiles ++ extractedSrcFiles).toMap
