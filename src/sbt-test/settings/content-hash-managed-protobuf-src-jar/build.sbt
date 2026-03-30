@@ -28,9 +28,6 @@ writeDepJar := {
   IO.zip(Path.allSubpaths(sourceDir).toSeq, jar)
 }
 
-val protocCount = taskKey[Int]("Number of protoc invocations")
-protocCount := TestState.protocInvocations()
-
 val unpackCount = taskKey[Int]("Number of actual unpack executions")
 unpackCount := {
   if (unpackHookFile.exists()) IO.readLines(unpackHookFile).count(_.nonEmpty)
@@ -40,7 +37,7 @@ unpackCount := {
 Compile / PB.runProtoc := {
   val original = (Compile / PB.runProtoc).value
   (args, extraEnv) => {
-    TestState.incrementProtocAndGet()
+    ProtocCount.incrementAndGet()
     original.run(args, extraEnv)
   }
 }
@@ -57,7 +54,7 @@ val assertProtocCount = inputKey[Unit]("Assert protoc invocation count")
 assertProtocCount := {
   import complete.DefaultParsers._
   val expected = (Space ~> IntBasic).parsed
-  val actual   = TestState.protocInvocations()
+  val actual   = ProtocCount.get()
   assert(actual == expected, s"Expected protoc count $expected but got $actual")
 }
 

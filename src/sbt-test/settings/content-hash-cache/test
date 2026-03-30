@@ -41,7 +41,7 @@ $ delete target/scala-2.12/src_managed/main/mypkg/FooOuterClass.java
 > assertProtocCount 4
 
 # New .proto file — protoc MUST re-run (count: 4 -> 5)
-$ touch src/main/protobuf/bar.proto
+$ copy-file changes/bar.proto src/main/protobuf/bar.proto
 > protocGenerate
 > assertProtocCount 5
 

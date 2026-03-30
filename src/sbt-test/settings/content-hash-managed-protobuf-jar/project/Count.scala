@@ -1,12 +1,10 @@
 import sbt._
 
-object TestState {
-  private var protocCount = 0
-
-  def incrementProtocAndGet(): Int = {
-    protocCount += 1
-    protocCount
+object ProtocCount {
+  private var count = 0
+  def incrementAndGet(): Int = {
+    count += 1
+    count
   }
-
-  def protocInvocations(): Int = protocCount
+  def get(): Int = count
 }

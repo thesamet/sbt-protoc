@@ -21,7 +21,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object ProtocPlugin extends AutoPlugin {
 
-  private[sbtprotoc] object TestHooks {
+  // Test-only instrumentation: records unpack executions to a file when the
+  // system property is set by scripted tests. No-op in production (property is null).
+  private[this] object TestHooks {
     private val UnpackHookFileProperty = "sbtprotoc.test.unpackHookFile"
 
     def recordUnpackExecution(dep: File): Unit =
@@ -516,13 +518,13 @@ object ProtocPlugin extends AutoPlugin {
         streams.cacheDirectory / dep.name,
         inStyle = inStyle,
         outStyle = FilesInfo.exists
-      ) { deps =>
-        deps.foreach(TestHooks.recordUnpackExecution)
+      ) { inputFiles =>
+        inputFiles.foreach(TestHooks.recordUnpackExecution)
         IO.createDirectory(extractTarget)
-        deps.flatMap { dep =>
-          val set = IO.unzip(dep, extractTarget, "*.proto")
+        inputFiles.flatMap { jarFile =>
+          val set = IO.unzip(jarFile, extractTarget, "*.proto")
           if (set.nonEmpty)
-            streams.log.debug("Extracted from " + dep + set.mkString(":\n * ", "\n * ", ""))
+            streams.log.debug("Extracted from " + jarFile + set.mkString(":\n * ", "\n * ", ""))
           set
         }
       }
@@ -715,17 +717,6 @@ object ProtocPlugin extends AutoPlugin {
 
       import CacheImplicits._
 
-      def invalidationLog(inChanged: Boolean, outDiff: ChangeReport[File]): Unit =
-        log.debug {
-          val inputInvalidation =
-            if (inChanged) Seq("input changed")
-            else Seq()
-          val outputInvalidation =
-            if (outDiff.modified.nonEmpty) Seq(s"output files changed ${outDiff.modified}")
-            else Seq()
-          s"Invalidating cache (${(inputInvalidation ++ outputInvalidation).mkString(" and ")})"
-        }
-
       def runCachedCompile[S: sjsonnew.JsonFormat](cacheSuffix: String, stamp: S): Seq[File] = {
         val cachedCompile = Tracked.inputChanged[S, Set[File]](
           cacheFile / cacheSuffix
@@ -735,7 +726,14 @@ object ProtocPlugin extends AutoPlugin {
             FileInfo.exists
           ) { outDiff: ChangeReport[File] =>
             if (inChanged || outDiff.modified.nonEmpty) {
-              invalidationLog(inChanged, outDiff)
+              log.debug {
+                val reasons = Seq(
+                  if (inChanged) Some("input changed") else None,
+                  if (outDiff.modified.nonEmpty) Some(s"output files changed ${outDiff.modified}")
+                  else None
+                ).flatten
+                s"Invalidating cache (${reasons.mkString(" and ")})"
+              }
               compileProto()
             } else outDiff.checked
           }
@@ -749,12 +747,18 @@ object ProtocPlugin extends AutoPlugin {
       } else {
         val useContentHash           = (key / PB.cacheStyle).value == CacheStyle.ContentHash
         val sandboxedArtifactsStamps =
-          stampedClassLoadersByArtifact.values.map(_._1).toSeq
+          stampedClassLoadersByArtifact.toSeq.sortBy(_._1.toString).map(_._2._1)
         val allInputFiles = schemas ++ arguments.includePaths.allPaths.get()
 
         if (useContentHash) {
-          val protoInputFiles = allInputFiles.filter(_.getName.endsWith(".proto"))
-          val inputStamp      = FileInfo.hash(protoInputFiles)
+          // Filter to existing .proto files only: allPaths.get() expands include
+          // directories and may contain non-proto files or directories that would
+          // cause spurious hash changes. The exists() check narrows the race window
+          // with concurrent file deletions (FileInfo.hash throws on missing files,
+          // unlike FileInfo.lastModified which returns 0).
+          val protoInputFiles =
+            allInputFiles.filter(f => f.getName.endsWith(".proto") && f.exists())
+          val inputStamp = FileInfo.hash(protoInputFiles)
           runCachedCompile("hash", (arguments, sandboxedArtifactsStamps, inputStamp))
         } else {
           val inputStamp = FileInfo.lastModified(allInputFiles)
@@ -765,6 +769,8 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
+      // Note: unpackDependenciesTask runs at project scope (not per-config),
+      // so we explicitly read from Compile scope here.
       val cacheStyle     = (Compile / PB.cacheStyle).value
       val extractedFiles = unpack(
         (ProtobufConfig / key / managedClasspath).value.map(_.data),

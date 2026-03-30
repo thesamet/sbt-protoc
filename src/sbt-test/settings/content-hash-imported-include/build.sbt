@@ -5,9 +5,6 @@ Compile / PB.targets := Seq(
 Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
 Compile / PB.includePaths += baseDirectory.value / "external"
 
-val protocCount = taskKey[Int]("Number of protoc invocations")
-protocCount := ProtocCount.get()
-
 Compile / PB.runProtoc := {
   val original = (Compile / PB.runProtoc).value
   (args, extraEnv) => {
