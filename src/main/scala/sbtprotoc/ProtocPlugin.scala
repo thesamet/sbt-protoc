@@ -1,16 +1,18 @@
 package sbtprotoc
 
-import sbt._
+import xsbti.FileConverter
+import sbt.util.CacheImplicits.{*, given}
+import sbt.librarymanagement.LibraryManagementCodec.{*, given}
+import sbtcompat.PluginCompat
+import sbtcompat.PluginCompat._
+import sbt.{given, _}
 import Keys._
 import java.io.{File, FileInputStream, IOException}
 
 import protocbridge.{DescriptorSetGenerator, SandboxedJvmGenerator, Target, ProtocRunner}
 import sbt.librarymanagement.{CrossVersion, ModuleID}
 import sbt.plugins.JvmPlugin
-import sbt.util.CacheImplicits
 
-import sjsonnew.JsonFormat
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 import java.net.URLClassLoader
 import java.util.jar.JarInputStream
 import sbt.librarymanagement.DependencyResolution
@@ -19,7 +21,7 @@ import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache, PluginGe
 import scala.concurrent.{Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object ProtocPlugin extends AutoPlugin {
+object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
   object autoImport {
     object PB {
       val includePaths = SettingKey[Seq[File]](
@@ -42,8 +44,10 @@ object ProtocPlugin extends AutoPlugin {
         "The path to which protobuf-src:libraryDependencies are extracted and which is used as additional sources for protoc"
       )
 
+      @transient
       val generate = TaskKey[Seq[File]]("protoc-generate", "Compile the protobuf sources.")
 
+      @transient
       val unpackDependencies =
         TaskKey[UnpackedDependencies]("protoc-unpack-dependencies", "Unpack dependencies.")
 
@@ -61,11 +65,13 @@ object ProtocPlugin extends AutoPlugin {
 
       val targets = SettingKey[Seq[Target]]("protoc-targets", "List of targets to generate")
 
+      @transient
       val protocExecutable = TaskKey[File](
         "protoc-executable",
         "Path to a protoc executable. Default downloads protocDependency from maven."
       )
 
+      @transient
       val runProtoc = TaskKey[ProtocRunner[Int]](
         "protoc-run-protoc",
         "protocbridge.ProtocRunner is a function object that executes protoc with given command line arguments and environment variables, returning the exit code of the compilation run."
@@ -77,11 +83,13 @@ object ProtocPlugin extends AutoPlugin {
         "Binary artifact for protoc on maven"
       )
 
+      @transient
       val artifactResolver = TaskKey[BridgeArtifact => Seq[java.io.File]](
         "artifact-resolver",
         "Function that retrieves all transitive dependencies of a given artifact."
       )
 
+      @transient
       val protocCache = TaskKey[FileCache[ModuleID]]("protoc-cache", "Cache of protoc executables")
 
       val cacheArtifactResolution = SettingKey[Boolean](
@@ -104,6 +112,7 @@ object ProtocPlugin extends AutoPlugin {
         "delete-target-directory",
         "Delete target directory before regenerating sources."
       )
+      @transient
       val recompile = TaskKey[Boolean]("protoc-recompile")
 
       val Target       = protocbridge.Target
@@ -148,14 +157,6 @@ object ProtocPlugin extends AutoPlugin {
       targets: Seq[(String, Seq[BridgeArtifact], File, Seq[String])]
   )
 
-  private[sbtprotoc] object Arguments extends CacheImplicits {
-    implicit val artifactFormat: JsonFormat[BridgeArtifact] =
-      caseClassArray(BridgeArtifact.apply _, BridgeArtifact.unapply _)
-
-    implicit val argumentsFormat: JsonFormat[Arguments] =
-      caseClassArray(Arguments.apply _, Arguments.unapply _)
-  }
-
   import autoImport.PB
   import autoImport.AsProtocPlugin
 
@@ -196,11 +197,9 @@ object ProtocPlugin extends AutoPlugin {
               "instead of relying on the default."
           )
 
-          import sbt.librarymanagement.ivy._
-          val ivyConfig = InlineIvyConfiguration()
-            .withResolvers(Vector(Resolver.defaultLocal, Resolver.mavenCentral))
-            .withLog(log)
-          IvyDependencyResolution(ivyConfig)
+          lmcoursier.CoursierDependencyResolution(
+            (LocalRootProject / updateClassifiers / csrConfiguration).value
+          )
         }
       },
       PB.protocCache := {
@@ -248,34 +247,22 @@ object ProtocPlugin extends AutoPlugin {
       PB.externalSourcePath  := target.value / "protobuf_external_src",
       Compile / PB.protoSources += PB.externalSourcePath.value,
       PB.unpackDependencies     := unpackDependenciesTask(PB.unpackDependencies).value,
-      PB.additionalDependencies := {
-        val libs = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
-        platformDepsCrossVersion.?.value match {
-          case Some(c) =>
-            libs.map { lib =>
-              val a = makeArtifact(lib)
-              if (lib.crossVersion)
-                a cross c
-              else
-                a
-            }
-          case None =>
-            libs.map(makeArtifact)
-        }
-      },
+      PB.additionalDependencies := additionalDependenciesValue.value,
       libraryDependencies ++= PB.additionalDependencies.value,
       ProtobufConfig / classpathTypes += PB.ProtocPlugin,
       ProtobufConfig / managedClasspath :=
-        Classpaths.managedJars(
+        classpathsManagedJars(
           ProtobufConfig,
           (ProtobufConfig / classpathTypes).value,
-          (ProtobufConfig / update).value
+          (ProtobufConfig / update).value,
+          fileConverter.value
         ),
       ProtobufSrcConfig / managedClasspath :=
-        Classpaths.managedJars(
+        classpathsManagedJars(
           ProtobufSrcConfig,
           (ProtobufSrcConfig / classpathTypes).value,
-          (ProtobufSrcConfig / update).value
+          (ProtobufSrcConfig / update).value,
+          fileConverter.value
         ),
       ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
       PB.protocDependency := {
@@ -292,7 +279,7 @@ object ProtocPlugin extends AutoPlugin {
             s"""PB.protocVersion must contain a dot-separated version number. For example: "3.13.0". Got: '${PB.protocVersion.value}'"""
           )
         }
-        ("com.google.protobuf" % "protoc" % version) asProtocBinary ()
+        ("com.google.protobuf" % "protoc" % version).asProtocBinary()
       },
       PB.protocExecutable := {
         scala.concurrent.Await.result(
@@ -365,14 +352,6 @@ object ProtocPlugin extends AutoPlugin {
 
   case class UnpackedDependencies(mappedFiles: Map[File, UnpackedDependency]) {
     def files: Seq[File] = mappedFiles.values.flatMap(_.files).toSeq
-  }
-
-  private[sbtprotoc] object UnpackedDependencies extends CacheImplicits {
-    implicit val UnpackedDependencyFormat: JsonFormat[UnpackedDependency] =
-      caseClassArray(UnpackedDependency.apply _, UnpackedDependency.unapply _)
-
-    implicit val UnpackedDependenciesFormat: JsonFormat[UnpackedDependencies] =
-      caseClassArray(UnpackedDependencies.apply _, UnpackedDependencies.unapply _)
   }
 
   private[this] def artifactResolverImpl(
@@ -482,7 +461,7 @@ object ProtocPlugin extends AutoPlugin {
   ): Seq[(File, UnpackedDependency)] = {
     def cachedExtractDep(dep: File): Seq[File] = {
       val cached = FileFunction.cached(
-        streams.cacheDirectory / dep.name,
+        streams.cacheDirectory / dep.getName,
         inStyle = FilesInfo.lastModified,
         outStyle = FilesInfo.exists
       ) { deps =>
@@ -533,8 +512,11 @@ object ProtocPlugin extends AutoPlugin {
     }
   }
 
-  private[this] def isNativePlugin(dep: Attributed[File]): Boolean =
-    dep.get(artifact.key).exists(_.`type` == PB.ProtocPlugin)
+  private[this] def isNativePlugin(dep: Attributed[FileRef]): Boolean =
+    dep
+      .get(PluginCompat.artifactStr)
+      .map(parseArtifactStrAttribute)
+      .exists(_.`type` == PB.ProtocPlugin)
 
   private[this] val classloaderCache =
     new java.util.concurrent.ConcurrentHashMap[
@@ -581,20 +563,22 @@ object ProtocPlugin extends AutoPlugin {
       val nativePlugins =
         (ProtobufConfig / key / managedClasspath).value.filter(isNativePlugin _)
 
+      implicit val converter: FileConverter = fileConverter.value
+
       // Ensure all plugins are executable
-      nativePlugins.foreach { dep => dep.data.setExecutable(true) }
+      nativePlugins.foreach { dep => toFile(dep.data).setExecutable(true) }
 
       val nativePluginsArgs = nativePlugins.flatMap { a =>
-        val dep        = a.get(artifact.key).get
+        val dep        = parseArtifactStrAttribute(a.get(PluginCompat.artifactStr).get)
         val pluginPath = {
           ProtocRunner
             .maybeNixDynamicLinker()
-            .filterNot(_ => a.data.getName.endsWith(".sh")) match {
-            case None         => a.data.absolutePath
+            .filterNot(_ => toFile(a.data).getName.endsWith(".sh")) match {
+            case None         => toFile(a.data).absolutePath
             case Some(linker) =>
               IO.withTemporaryFile("nix", dep.name, keepFile = true) { f =>
                 f.deleteOnExit()
-                IO.write(f, s"""#!/bin/sh\n$linker ${a.data.absolutePath} "$$@"\n""")
+                IO.write(f, s"""#!/bin/sh\n$linker ${toFile(a.data).absolutePath} "$$@"\n""")
                 f.setExecutable(true)
                 f.getAbsolutePath()
               }
@@ -689,7 +673,7 @@ object ProtocPlugin extends AutoPlugin {
         Tracked.diffOutputs(
           cacheFile / "output",
           FileInfo.exists
-        ) { outDiff: ChangeReport[File] =>
+        ) { (outDiff: ChangeReport[File]) =>
           if (inChanged || outDiff.modified.nonEmpty) {
             log.debug {
               val inputInvalidation =
@@ -719,13 +703,14 @@ object ProtocPlugin extends AutoPlugin {
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
-      val extractedFiles = unpack(
-        (ProtobufConfig / key / managedClasspath).value.map(_.data),
+      implicit val converter: FileConverter = fileConverter.value
+      val extractedFiles                    = unpack(
+        (ProtobufConfig / key / managedClasspath).value.map(_.data).map(toFile),
         (key / PB.externalIncludePath).value,
         (key / streams).value
       )
       val extractedSrcFiles = unpack(
-        (ProtobufSrcConfig / key / managedClasspath).value.map(_.data),
+        (ProtobufSrcConfig / key / managedClasspath).value.map(_.data).map(toFile),
         (key / PB.externalSourcePath).value,
         (key / streams).value
       )
@@ -751,7 +736,7 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def filter: ScopeFilter =
     ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
 
-  private[this] def makeArtifact(f: BridgeArtifact): ModuleID = {
+  private[sbtprotoc] def makeArtifact(f: BridgeArtifact): ModuleID = {
     ModuleID(f.groupId, f.artifactId, f.version)
       .cross(if (f.crossVersion) CrossVersion.binary else CrossVersion.disabled)
       .withExtraAttributes(f.extraAttributes)
