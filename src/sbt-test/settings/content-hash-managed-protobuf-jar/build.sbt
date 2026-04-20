@@ -49,13 +49,15 @@ assertFooReferencesDep := {
 // miss: v1 defines only `string name`, v2 adds `int32 age`. Checking the
 // extracted file distinguishes the two versions without production-side
 // instrumentation.
+// "int32 age" is the v2-specific signature. Matching just "age" would yield
+// false positives because `package dep;` contains "age" as a substring.
 val assertExtractedDepIsV1 = taskKey[Unit]("Extracted dep.proto must match v1 (no age field)")
 assertExtractedDepIsV1 := {
   val extracted = (Compile / PB.externalIncludePath).value / "dep" / "dep.proto"
   assert(extracted.exists(), s"Expected extracted file at $extracted")
   val content = IO.read(extracted)
   assert(
-    !content.contains("age"),
+    !content.contains("int32 age"),
     s"Expected v1 (no age field) but $extracted contains:\n$content"
   )
 }
@@ -66,7 +68,7 @@ assertExtractedDepIsV2 := {
   assert(extracted.exists(), s"Expected extracted file at $extracted")
   val content = IO.read(extracted)
   assert(
-    content.contains("age"),
+    content.contains("int32 age"),
     s"Expected v2 (age field) but $extracted contains:\n$content"
   )
 }
