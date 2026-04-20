@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+* Add opt-in `PB.cacheStyle` setting for content-hash based input tracking
+  (`PB.CacheStyle.ContentHash`), useful in CI environments where file
+  timestamps are not preserved across jobs. Default remains
+  `PB.CacheStyle.LastModified` — existing behaviour is unchanged.
+* Breaking cache-format change: on-disk cache state is now split into
+  per-mode subdirectories (`cacheFile/mtime/`, `cacheFile/hash/`), and the
+  artifact stamp order is now deterministic (previously relied on unstable
+  HashMap iteration). Upgrading users will see a one-time spurious recompile
+  on the first build after the upgrade regardless of which `cacheStyle` is
+  selected; subsequent builds cache normally. (#430, #431)
+
 ## [1.0.7]
 * Update default protoc to 3.21.7
 * For nix-os: support executing statically linked protoc (for versions >=3.23.0)
