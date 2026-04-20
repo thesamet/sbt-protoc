@@ -717,12 +717,16 @@ object ProtocPlugin extends AutoPlugin {
 
       import CacheImplicits._
 
-      def runCachedCompile[S: sjsonnew.JsonFormat](cacheSuffix: String, stamp: S): Seq[File] = {
+      def runCachedCompile[S: sjsonnew.JsonFormat](cacheSubdir: String, stamp: S): Seq[File] = {
+        // Each mode owns its own cacheFile subdirectory so that switching
+        // PB.cacheStyle between builds can't inherit a stale output snapshot
+        // recorded by the other mode.
+        val modeCache    = cacheFile / cacheSubdir
         val cachedCompile = Tracked.inputChanged[S, Set[File]](
-          cacheFile / cacheSuffix
+          modeCache / "input"
         ) { case (inChanged, _) =>
           Tracked.diffOutputs(
-            cacheFile / "output",
+            modeCache / "output",
             FileInfo.exists
           ) { outDiff: ChangeReport[File] =>
             if (inChanged || outDiff.modified.nonEmpty) {
@@ -751,18 +755,18 @@ object ProtocPlugin extends AutoPlugin {
         val allInputFiles = schemas ++ arguments.includePaths.allPaths.get()
 
         if (useContentHash) {
-          // Filter to existing .proto files only: allPaths.get() expands include
-          // directories and may contain non-proto files or directories that would
-          // cause spurious hash changes. The exists() check narrows the race window
-          // with concurrent file deletions (FileInfo.hash throws on missing files,
-          // unlike FileInfo.lastModified which returns 0).
-          val protoInputFiles =
-            allInputFiles.filter(f => f.getName.endsWith(".proto") && f.exists())
-          val inputStamp = FileInfo.hash(protoInputFiles)
+          // FileInfo.hash opens a FileInputStream per input and throws on
+          // directories or missing files, while FileInfo.lastModified tolerates
+          // both. File.isFile returns true only for existing regular files, so
+          // a single predicate covers both concerns without filtering by
+          // extension — ContentHash sees the same file set as LastModified
+          // minus directories.
+          val hashableInputFiles = allInputFiles.filter(_.isFile)
+          val inputStamp         = FileInfo.hash(hashableInputFiles)
           runCachedCompile("hash", (arguments, sandboxedArtifactsStamps, inputStamp))
         } else {
           val inputStamp = FileInfo.lastModified(allInputFiles)
-          runCachedCompile("input", (arguments, sandboxedArtifactsStamps, inputStamp))
+          runCachedCompile("mtime", (arguments, sandboxedArtifactsStamps, inputStamp))
         }
       }
     }
