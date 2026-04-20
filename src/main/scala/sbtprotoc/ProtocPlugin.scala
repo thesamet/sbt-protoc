@@ -21,17 +21,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object ProtocPlugin extends AutoPlugin {
 
-  // Test-only instrumentation: records unpack executions to a file when the
-  // system property is set by scripted tests. No-op in production (property is null).
-  private[this] object TestHooks {
-    private val UnpackHookFileProperty = "sbtprotoc.test.unpackHookFile"
-
-    def recordUnpackExecution(dep: File): Unit =
-      Option(System.getProperty(UnpackHookFileProperty)).foreach { fileName =>
-        IO.append(file(fileName), s"${dep.getAbsolutePath}\n")
-      }
-  }
-
   sealed trait CacheStyle
   object CacheStyle {
     case object LastModified extends CacheStyle
@@ -519,7 +508,6 @@ object ProtocPlugin extends AutoPlugin {
         inStyle = inStyle,
         outStyle = FilesInfo.exists
       ) { inputFiles =>
-        inputFiles.foreach(TestHooks.recordUnpackExecution)
         IO.createDirectory(extractTarget)
         inputFiles.flatMap { jarFile =>
           val set = IO.unzip(jarFile, extractTarget, "*.proto")

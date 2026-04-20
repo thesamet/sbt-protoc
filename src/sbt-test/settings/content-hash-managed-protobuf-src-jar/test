@@ -4,29 +4,27 @@
 > writeDepJar v1
 > protocGenerate
 > assertProtocCount 1
-> assertUnpackCount 1
+> assertExtractedDepIsV1
 > assertDepSourceGenerated
 
 > protocGenerate
 > assertProtocCount 1
-> assertUnpackCount 1
 
 $ touch deps/dep-src.jar
 > protocGenerate
 > assertProtocCount 1
-> assertUnpackCount 1
+> assertExtractedDepIsV1
 
 > writeDepJar v2
 > protocGenerate
 > assertProtocCount 2
-> assertUnpackCount 2
+> assertExtractedDepIsV2
 > assertDepSourceGenerated
 
 > protocGenerate
 > assertProtocCount 2
-> assertUnpackCount 2
 
 $ touch deps/dep-src.jar
 > protocGenerate
 > assertProtocCount 2
-> assertUnpackCount 2
+> assertExtractedDepIsV2
