@@ -1,10 +1,8 @@
 import sbt._
+import java.util.concurrent.atomic.AtomicInteger
 
 object ProtocCount {
-  private var count = 0
-  def incrementAndGet(): Int = {
-    count += 1
-    count
-  }
-  def get(): Int = count
+  private val count          = new AtomicInteger(0)
+  def incrementAndGet(): Int = count.incrementAndGet()
+  def get(): Int             = count.get()
 }
