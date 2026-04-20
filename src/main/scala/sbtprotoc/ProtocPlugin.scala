@@ -711,7 +711,7 @@ object ProtocPlugin extends AutoPlugin {
         // Each mode owns its own cacheFile subdirectory so that switching
         // PB.cacheStyle between builds can't inherit a stale output snapshot
         // recorded by the other mode.
-        val modeCache    = cacheFile / cacheSubdir
+        val modeCache     = cacheFile / cacheSubdir
         val cachedCompile = Tracked.inputChanged[S, Set[File]](
           modeCache / "input"
         ) { case (inChanged, _) =>
