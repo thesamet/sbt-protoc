@@ -118,7 +118,9 @@ object ProtocPlugin extends AutoPlugin {
         "Caching strategy for proto file change detection. " +
           "LastModified (default) uses file timestamps. " +
           "ContentHash uses file content hashes, which is more reliable in CI environments " +
-          "where timestamps are not preserved across jobs."
+          "where timestamps are not preserved across jobs. " +
+          "Note: PB.unpackDependencies reads this setting from the Compile scope only; " +
+          "setting Test / PB.cacheStyle affects protoc caching but is ignored for unpacking."
       )
 
       val CacheStyle   = sbtprotoc.ProtocPlugin.CacheStyle

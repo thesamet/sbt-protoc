@@ -218,6 +218,9 @@ PB.pythonExe := "/path/to/python.exe"
 // across jobs (e.g., git clone resets mtimes, CI artifact transfer via zip
 // loses timestamps). With this setting, protoc will only re-run when the
 // actual content of .proto files changes, not when their timestamps change.
+// Note: PB.unpackDependencies reads PB.cacheStyle from the Compile scope only.
+// Setting Test / PB.cacheStyle affects protoc caching but not the unpacking
+// of protobuf-config dependencies.
 Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
 
 // Disables the manifest processing feature of sbt-protoc that automatically
