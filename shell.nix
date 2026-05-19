@@ -1,4 +1,6 @@
-{ pkgs ? import <nixpkgs> { } }:
+{
+  pkgs ? import <nixpkgs> { },
+}:
 
 with pkgs;
 
@@ -12,7 +14,7 @@ mkShell {
     nodejs
     yarn
     clang
-    graalvm-ce
+    graalvmPackages.graalvm-ce
 
     # keep this line if you use bash
     bashInteractive
