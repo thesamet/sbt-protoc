@@ -1,7 +1,7 @@
 queue_rules:
   - name: default
     merge_method: squash
-    conditions:
+    merge_conditions:
       - check-success=ci-passed
 
 pull_request_rules:
