@@ -20,7 +20,7 @@ jobs:
         key: ${{ runner.os }}-sbt-docs-${{ hashFiles('**/*.sbt') }}
     - uses: actions/setup-java@v1
       with:
-        java-version: 8
+        java-version: 17
     - uses: sbt/setup-sbt@v1
     - name: Publish ${{ github.ref }}
       run: sbt ci-release
