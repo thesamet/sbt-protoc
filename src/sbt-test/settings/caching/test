@@ -27,7 +27,7 @@ $ touch api/src/main/protobuf/foo.proto
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto false
-> 'set api / PB.protocVersion := "3.12.0"'
+> 'set api / PB.protocVersion := "3.19.1"'
 -> api/protocGenerate
 -> api/protocGenerate
 > setReadable api/src/main/protobuf/foo.proto true
