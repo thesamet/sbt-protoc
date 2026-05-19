@@ -8,5 +8,5 @@ $ absent target/scala-2.12/classes/com/google/protobuf/MessageOptions.class
 > package
 $ absent ./target/scala-2.12/classes/google/api/annotations.proto
 
-> test:compile
+> Test/compile
 $ absent target/scala-2.12/test-classes/com/google/api/MetricRule.class
