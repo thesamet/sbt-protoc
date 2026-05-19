@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.1.0-RC1]
+* Add support for sbt 2
+
 ## [1.0.7]
 * Update default protoc to 3.21.7
 * For nix-os: support executing statically linked protoc (for versions >=3.23.0)
