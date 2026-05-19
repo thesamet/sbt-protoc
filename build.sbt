@@ -19,7 +19,7 @@ scalacOptions ++= {
 
 def sbt2 = "2.0.0-RC13"
 
-scalaVersion := "2.12.21"
+scalaVersion := "2.13.18"
 
 crossScalaVersions += "3.8.3"
 
