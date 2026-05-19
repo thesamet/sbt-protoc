@@ -85,7 +85,7 @@ jobs:
       with:
         java-version: 17
         distribution: temurin
-    - run: sbt "++ 3.x" test
+    - run: sbt "++ 3.x" test scriptedTestSbt2
 
   # Single final job for mergify.
   ci-passed:

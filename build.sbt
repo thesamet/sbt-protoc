@@ -64,6 +64,15 @@ pluginCrossBuild / sbtVersion := {
   }
 }
 
+scriptedSbt := {
+  scalaBinaryVersion.value match {
+    case "2.12" =>
+      sbtVersion.value
+    case _ =>
+      sbt2
+  }
+}
+
 inThisBuild(
   List(
     organization := "com.thesamet",
@@ -82,3 +91,32 @@ inThisBuild(
     )
   )
 )
+
+TaskKey[Unit]("scriptedTestSbt2") := Def.taskDyn {
+  val values = sbtTestDirectory.value
+    .listFiles(_.isDirectory)
+    .flatMap { dir1 =>
+      dir1.listFiles(_.isDirectory).map { dir2 =>
+        dir1.getName -> dir2.getName
+      }
+    }
+    .toList
+    .sorted
+  val log                            = streams.value.log
+  val exclude: Set[(String, String)] = Set(
+    "compat"      -> "scalapb-0.10.3",
+    "compat"      -> "scalapb-0.10.6",
+    "compat"      -> "scalapb-0.9",
+    "integration" -> "common-protos",
+    "settings"    -> "caching",
+    "settings"    -> "include-protos-in-jar",
+    "settings"    -> "itconfig",
+    "settings"    -> "non-jvm",
+    "settings"    -> "protobuf-src",
+    "settings"    -> "testconfig"
+  )
+  val args = values.filterNot(exclude).map { case (x1, x2) => s"${x1}/${x2}" }
+  val arg  = args.mkString(" ", " ", "")
+  log.info("scripted" + arg)
+  scripted.toTask(arg)
+}.value
