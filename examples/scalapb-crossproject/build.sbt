@@ -1,7 +1,7 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalapb.compiler.Version.scalapbVersion
 
-val Scala212 = "2.12.21"
+val Scala212 = "2.13.18"
 val Scala213 = "2.13.18"
 
 val sharedSettings = Seq(
