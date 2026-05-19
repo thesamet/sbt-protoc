@@ -41,7 +41,7 @@ lazy val api = (project in file("api"))
     ),
     PB.additionalDependencies ++= Seq(
       "com.google.protobuf"                % "protobuf-java"       % "3.13.0" % "protobuf",
-      ("io.envoyproxy.protoc-gen-validate" % "protoc-gen-validate" % "0.4.0").asProtocPlugin
+      ("io.envoyproxy.protoc-gen-validate" % "protoc-gen-validate" % "0.6.7").asProtocPlugin
     ),
     PB.artifactResolver := {
       val oldResolver = PB.artifactResolver.value

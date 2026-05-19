@@ -94,7 +94,7 @@ $ mkdir newdir
 # check cache invalidation on updated asProtocPlugin libraryDependencies
 > setReadable api/src/main/protobuf/foo.proto true
 > api/protocGenerate
-> 'set api / libraryDependencies ~= { _.map { dep => if (dep.name == "protoc-gen-validate") dep.withRevision("0.4.1") else dep } },'
+> 'set api / libraryDependencies ~= { _.map { dep => if (dep.name == "protoc-gen-validate") dep.withRevision("0.6.13") else dep } },'
 > setReadable api/src/main/protobuf/foo.proto false
 -> api/protocGenerate
 -> api/protocGenerate
