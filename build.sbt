@@ -23,7 +23,7 @@ scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
 // https://github.com/sbt/sbt/issues/5049#issuecomment-538404839
 pluginCrossBuild / sbtVersion := "1.2.8"
 
-sonatypeProfileName := "com.thesamet"
+sonatypeCredentialHost := sonatypeCentralHost
 
 inThisBuild(
   List(
