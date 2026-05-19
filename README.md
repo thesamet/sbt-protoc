@@ -182,6 +182,9 @@ libraryDependencies ++= Seq(
 // Changing where to look for protos to compile (default src/main/protobuf):
 Compile / PB.protoSources := Seq(sourceDirectory.value / "somewhere")
 
+// Changing where to look for relative `import`s (defaults to `PB.protoSources`):
+Compile / PB.importRoot := (Compile / baseDirectory).value / "protos"
+
 // Additional options to pass to protoc:
 Compile / PB.protocOptions := Seq("-xyz")
 

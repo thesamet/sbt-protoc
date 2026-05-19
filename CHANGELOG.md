@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.8]
+* Add option `PB.importRoot` (defaults to `PB.protoSources`) that allows you to set the directory
+that protobuf `import`s will be evaluated in.
+
 ## [1.0.7]
 * Update default protoc to 3.21.7
 * For nix-os: support executing statically linked protoc (for versions >=3.23.0)
