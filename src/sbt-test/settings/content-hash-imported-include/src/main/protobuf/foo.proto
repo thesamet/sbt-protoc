@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package mypkg;
+
+import "shared.proto";
+
+message Foo {
+  Shared value = 1;
+}

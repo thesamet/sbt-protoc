@@ -1,0 +1,30 @@
+# Tests PB.cacheStyle := PB.CacheStyle.ContentHash for protobuf-src dependency jars on managedClasspath.
+# The main source imports dep/dep.proto from the unpacked protobuf-src dependency.
+
+> writeDepJar v1
+> protocGenerate
+> assertProtocCount 1
+> assertExtractedDepIsV1
+> assertDepSourceGenerated
+
+> protocGenerate
+> assertProtocCount 1
+
+$ touch deps/dep-src.jar
+> protocGenerate
+> assertProtocCount 1
+> assertExtractedDepIsV1
+
+> writeDepJar v2
+> protocGenerate
+> assertProtocCount 2
+> assertExtractedDepIsV2
+> assertDepSourceGenerated
+
+> protocGenerate
+> assertProtocCount 2
+
+$ touch deps/dep-src.jar
+> protocGenerate
+> assertProtocCount 2
+> assertExtractedDepIsV2

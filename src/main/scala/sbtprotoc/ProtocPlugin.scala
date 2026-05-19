@@ -20,6 +20,13 @@ import scala.concurrent.{Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object ProtocPlugin extends AutoPlugin {
+
+  sealed trait CacheStyle
+  object CacheStyle {
+    case object LastModified extends CacheStyle
+    case object ContentHash  extends CacheStyle
+  }
+
   object autoImport {
     object PB {
       val includePaths = SettingKey[Seq[File]](
@@ -106,6 +113,17 @@ object ProtocPlugin extends AutoPlugin {
       )
       val recompile = TaskKey[Boolean]("protoc-recompile")
 
+      val cacheStyle = SettingKey[CacheStyle](
+        "protoc-cache-style",
+        "Caching strategy for proto file change detection. " +
+          "LastModified (default) uses file timestamps. " +
+          "ContentHash uses file content hashes, which is more reliable in CI environments " +
+          "where timestamps are not preserved across jobs. " +
+          "Note: PB.unpackDependencies reads this setting from the Compile scope only; " +
+          "setting Test / PB.cacheStyle affects protoc caching but is ignored for unpacking."
+      )
+
+      val CacheStyle   = sbtprotoc.ProtocPlugin.CacheStyle
       val Target       = protocbridge.Target
       val gens         = protocbridge.gens
       val ProtocPlugin = "protoc-plugin"
@@ -177,6 +195,7 @@ object ProtocPlugin extends AutoPlugin {
       PB.deleteTargetDirectory           := true,
       PB.cacheArtifactResolution         := true,
       PB.cacheClassLoaders               := true,
+      PB.cacheStyle                      := CacheStyle.LastModified,
       PB.generate / includeFilter        := "*.proto",
       PB.generate / dependencyResolution := {
         val log = streams.value.log
@@ -478,19 +497,24 @@ object ProtocPlugin extends AutoPlugin {
   private[this] def unpack(
       deps: Seq[File],
       extractTarget: File,
-      streams: TaskStreams
+      streams: TaskStreams,
+      cacheStyle: CacheStyle
   ): Seq[(File, UnpackedDependency)] = {
     def cachedExtractDep(dep: File): Seq[File] = {
+      val inStyle = cacheStyle match {
+        case CacheStyle.ContentHash  => FilesInfo.hash
+        case CacheStyle.LastModified => FilesInfo.lastModified
+      }
       val cached = FileFunction.cached(
         streams.cacheDirectory / dep.name,
-        inStyle = FilesInfo.lastModified,
+        inStyle = inStyle,
         outStyle = FilesInfo.exists
-      ) { deps =>
+      ) { inputFiles =>
         IO.createDirectory(extractTarget)
-        deps.flatMap { dep =>
-          val set = IO.unzip(dep, extractTarget, "*.proto")
+        inputFiles.flatMap { jarFile =>
+          val set = IO.unzip(jarFile, extractTarget, "*.proto")
           if (set.nonEmpty)
-            streams.log.debug("Extracted from " + dep + set.mkString(":\n * ", "\n * ", ""))
+            streams.log.debug("Extracted from " + jarFile + set.mkString(":\n * ", "\n * ", ""))
           set
         }
       }
@@ -682,52 +706,77 @@ object ProtocPlugin extends AutoPlugin {
       }
 
       import CacheImplicits._
-      type Stamp = (Arguments, Seq[FilesInfo[ModifiedFileInfo]])
-      val cachedCompile = Tracked.inputChanged[Stamp, Set[File]](
-        cacheFile / "input"
-      ) { case (inChanged, _) =>
-        Tracked.diffOutputs(
-          cacheFile / "output",
-          FileInfo.exists
-        ) { outDiff: ChangeReport[File] =>
-          if (inChanged || outDiff.modified.nonEmpty) {
-            log.debug {
-              val inputInvalidation =
-                if (inChanged) Seq("input changed")
-                else Seq()
-              val outputInvalidation =
-                if (outDiff.modified.nonEmpty) Seq(s"output files changed ${outDiff.modified}")
-                else Seq()
-              s"Invalidating cache (${(inputInvalidation ++ outputInvalidation).mkString(" and ")})"
-            }
-            compileProto()
-          } else outDiff.checked
+
+      def runCachedCompile[S: sjsonnew.JsonFormat](cacheSubdir: String, stamp: S): Seq[File] = {
+        // Each mode owns its own cacheFile subdirectory so that switching
+        // PB.cacheStyle between builds can't inherit a stale output snapshot
+        // recorded by the other mode.
+        val modeCache     = cacheFile / cacheSubdir
+        val cachedCompile = Tracked.inputChanged[S, Set[File]](
+          modeCache / "input"
+        ) { case (inChanged, _) =>
+          Tracked.diffOutputs(
+            modeCache / "output",
+            FileInfo.exists
+          ) { outDiff: ChangeReport[File] =>
+            if (inChanged || outDiff.modified.nonEmpty) {
+              log.debug {
+                val reasons = Seq(
+                  if (inChanged) Some("input changed") else None,
+                  if (outDiff.modified.nonEmpty) Some(s"output files changed ${outDiff.modified}")
+                  else None
+                ).flatten
+                s"Invalidating cache (${reasons.mkString(" and ")})"
+              }
+              compileProto()
+            } else outDiff.checked
+          }
         }
+        cachedCompile(stamp).toSeq
       }
 
       if (PB.recompile.value) {
         log.debug("Ignoring cache (PB.recompile := true)")
         compileProto().toSeq
       } else {
+        val useContentHash           = (key / PB.cacheStyle).value == CacheStyle.ContentHash
         val sandboxedArtifactsStamps =
-          stampedClassLoadersByArtifact.values.map(_._1).toSeq
-        val inputStamp =
-          FileInfo.lastModified(schemas ++ arguments.includePaths.allPaths.get())
-        cachedCompile((arguments, sandboxedArtifactsStamps :+ inputStamp)).toSeq
+          stampedClassLoadersByArtifact.toSeq.sortBy(_._1.toString).map(_._2._1)
+        val allInputFiles = schemas ++ arguments.includePaths.allPaths.get()
+
+        if (useContentHash) {
+          // FileInfo.hash opens a FileInputStream per input and throws on
+          // directories or missing files, while FileInfo.lastModified tolerates
+          // both. File.isFile returns true only for existing regular files, so
+          // a single predicate covers both concerns without filtering by
+          // extension — ContentHash sees the same file set as LastModified
+          // minus directories.
+          val hashableInputFiles = allInputFiles.filter(_.isFile)
+          val inputStamp         = FileInfo.hash(hashableInputFiles)
+          runCachedCompile("hash", (arguments, sandboxedArtifactsStamps, inputStamp))
+        } else {
+          val inputStamp = FileInfo.lastModified(allInputFiles)
+          runCachedCompile("mtime", (arguments, sandboxedArtifactsStamps, inputStamp))
+        }
       }
     }
 
   private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
+      // Note: unpackDependenciesTask runs at project scope (not per-config),
+      // so we explicitly read from Compile scope here.
+      val cacheStyle     = (Compile / PB.cacheStyle).value
       val extractedFiles = unpack(
         (ProtobufConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalIncludePath).value,
-        (key / streams).value
+        (key / streams).value,
+        cacheStyle
       )
       val extractedSrcFiles = unpack(
         (ProtobufSrcConfig / key / managedClasspath).value.map(_.data),
         (key / PB.externalSourcePath).value,
-        (key / streams).value
+        (key / streams).value,
+        cacheStyle
       )
       val unpackedDeps = UnpackedDependencies(
         (extractedFiles ++ extractedSrcFiles).toMap
