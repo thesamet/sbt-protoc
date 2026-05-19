@@ -34,14 +34,14 @@ lazy val api = (project in file("api"))
   .settings(
     Compile / PB.targets := Seq(
       PB.gens.java -> (Compile / sourceManaged).value,
-      Target(PB.gens.plugin("validate"), (Compile / sourceManaged).value, Seq("lang=java")),
+      PB.gens.plugin("grpc-java") -> (Compile / sourceManaged).value,
       scalapb.gen() -> (Compile / sourceManaged).value,
       localGen      -> (Compile / sourceManaged).value,
       localGen -> (Compile / resourceManaged).value // use 2 generators with the same artifact to check dedup
     ),
     PB.additionalDependencies ++= Seq(
-      "com.google.protobuf"                % "protobuf-java"       % "3.13.0" % "protobuf",
-      ("io.envoyproxy.protoc-gen-validate" % "protoc-gen-validate" % "0.6.7").asProtocPlugin
+      "com.google.protobuf" % "protobuf-java"        % "3.13.0" % "protobuf",
+      ("io.grpc"            % "protoc-gen-grpc-java" % "1.81.0").asProtocPlugin()
     ),
     PB.artifactResolver := {
       val oldResolver = PB.artifactResolver.value
