@@ -17,7 +17,7 @@ scalacOptions ++= {
   }
 }
 
-def sbt2 = "2.0.0-RC13"
+def sbt2 = "2.0.0"
 
 scalaVersion := "2.12.21"
 
