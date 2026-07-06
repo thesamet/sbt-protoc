@@ -33,7 +33,7 @@ jobs:
       run: |
        sbt test
        cd examples
-       for d in */ ; do cd "$d" && sbt test && cd ../ ; done
+       for d in */ ; do (cd "$d" && sbt test) || exit $?; done
       shell: bash
     - name: Format check
       if: ${{ runner.os == 'Linux' }}
