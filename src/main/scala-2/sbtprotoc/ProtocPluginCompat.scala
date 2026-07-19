@@ -7,7 +7,7 @@ import sbt.UpdateReport
 import sbt.Compile
 import sjsonnew.BasicJsonProtocol.*
 import sjsonnew.JsonFormat
-import protocbridge.{Artifact => BridgeArtifact}
+import protocbridge.Artifact as BridgeArtifact
 import xsbti.FileConverter
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.platformDepsCrossVersion
 
