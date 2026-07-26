@@ -23,7 +23,7 @@ scalaVersion := "2.12.21"
 
 crossScalaVersions += "3.8.4"
 
-addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.1.0")
+addSbtPlugin("com.github.sbt" % "sbt2-compat" % "0.2.0")
 
 libraryDependencies ++= {
   val sbtV = (pluginCrossBuild / sbtBinaryVersion).value
