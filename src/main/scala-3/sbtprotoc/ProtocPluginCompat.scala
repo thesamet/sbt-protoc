@@ -6,7 +6,7 @@ import sjsonnew.BasicJsonProtocol.caseClassArray
 import sjsonnew.BasicJsonProtocol.given
 import sjsonnew.JsonFormat
 import sjsonnew.IsoString
-import protocbridge.{Artifact => BridgeArtifact}
+import protocbridge.Artifact as BridgeArtifact
 
 trait ProtocPluginCompat { self: ProtocPlugin.type =>
   import autoImport.PB
