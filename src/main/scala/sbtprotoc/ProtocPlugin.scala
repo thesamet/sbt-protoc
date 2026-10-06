@@ -123,20 +123,24 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
 
     implicit class AsProtocPlugin(val moduleId: ModuleID) extends AnyVal {
       def asProtocPlugin(): ModuleID = {
-        moduleId % "protobuf" artifacts (Artifact(
-          name = moduleId.name,
-          `type` = PB.ProtocPlugin,
-          extension = "exe",
-          classifier = BridgeSystemDetector.detectedClassifier()
-        ))
+        (moduleId % "protobuf").artifacts(
+          Artifact(
+            name = moduleId.name,
+            `type` = PB.ProtocPlugin,
+            extension = "exe",
+            classifier = BridgeSystemDetector.detectedClassifier()
+          )
+        )
       }
       def asProtocBinary(): ModuleID = {
-        moduleId artifacts (Artifact(
-          name = moduleId.name,
-          `type` = PB.ProtocBinary,
-          extension = "exe",
-          classifier = BridgeSystemDetector.detectedClassifier()
-        ))
+        moduleId.artifacts(
+          Artifact(
+            name = moduleId.name,
+            `type` = PB.ProtocBinary,
+            extension = "exe",
+            classifier = BridgeSystemDetector.detectedClassifier()
+          )
+        )
       }
     }
 
@@ -160,6 +164,10 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
   import autoImport.PB
   import autoImport.AsProtocPlugin
 
+  // Keep honoring the deprecated public setting for existing builds.
+  @scala.annotation.nowarn("cat=deprecation")
+  private val legacyCacheClassLoaders = PB.cacheClassLoaders
+
   val ProtobufConfig = config("protobuf")
 
   val ProtobufSrcConfig = config("protobuf-src")
@@ -170,14 +178,14 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
 
   override def projectConfigurations: Seq[Configuration] = Seq(ProtobufConfig)
 
-  override def globalSettings: Seq[Def.Setting[_]] = protobufGlobalSettings
+  override def globalSettings: Seq[Def.Setting[?]] = protobufGlobalSettings
 
-  private[this] def protobufGlobalSettings: Seq[Def.Setting[_]] =
+  private def protobufGlobalSettings: Seq[Def.Setting[?]] =
     Seq(
       PB.protocVersion                   := "3.21.7",
       PB.deleteTargetDirectory           := true,
       PB.cacheArtifactResolution         := true,
-      PB.cacheClassLoaders               := true,
+      legacyCacheClassLoaders            := true,
       PB.generate / includeFilter        := "*.proto",
       PB.generate / dependencyResolution := {
         val log = streams.value.log
@@ -237,11 +245,11 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
       )
     )
 
-  override def projectSettings: Seq[Def.Setting[_]] =
+  override def projectSettings: Seq[Def.Setting[?]] =
     Seq(Compile, Test).flatMap(inConfig(_)(protobufConfigSettings)) ++
       protobufProjectSettings
 
-  private[this] val protobufProjectSettings: Seq[Def.Setting[_]] =
+  private val protobufProjectSettings: Seq[Def.Setting[?]] =
     Seq(
       PB.externalIncludePath := target.value / "protobuf_external",
       PB.externalSourcePath  := target.value / "protobuf_external_src",
@@ -290,7 +298,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
     )
 
   // Settings that are applied at configuration (Compile, Test) scope.
-  val protobufConfigSettings: Seq[Setting[_]] =
+  val protobufConfigSettings: Seq[Setting[?]] =
     Seq(
       PB.recompile     := false,
       PB.protocOptions := Nil,
@@ -354,7 +362,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
     def files: Seq[File] = mappedFiles.values.flatMap(_.files).toSeq
   }
 
-  private[this] def artifactResolverImpl(
+  private def artifactResolverImpl(
       lm: DependencyResolution,
       cacheDirectory: File,
       log: Logger
@@ -368,7 +376,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
       .fold(w => throw w.resolveException, identity(_))
   }
 
-  private[this] def executeProtoc(
+  private def executeProtoc(
       protocRunner: ProtocRunner[Int],
       schemas: Set[File],
       includePaths: Seq[File],
@@ -397,7 +405,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
         )
     }
 
-  private[this] def sandboxedClassLoader(files: Seq[File]): URLClassLoader = {
+  private def sandboxedClassLoader(files: Seq[File]): URLClassLoader = {
     val cloader = new URLClassLoader(
       files.map(_.toURI().toURL()).toArray,
       new FilteringClassLoader(getClass().getClassLoader())
@@ -405,7 +413,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
     cloader
   }
 
-  private[this] def compile(
+  private def compile(
       protocRunner: ProtocRunner[Int],
       schemas: Set[File],
       includePaths: Seq[File],
@@ -454,7 +462,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
     }
   }
 
-  private[this] def unpack(
+  private def unpack(
       deps: Seq[File],
       extractTarget: File,
       streams: TaskStreams
@@ -512,19 +520,19 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
     }
   }
 
-  private[this] def isNativePlugin(dep: Attributed[FileRef]): Boolean =
+  private def isNativePlugin(dep: Attributed[FileRef]): Boolean =
     dep
       .get(PluginCompat.artifactStr)
       .map(parseArtifactStrAttribute)
       .exists(_.`type` == PB.ProtocPlugin)
 
-  private[this] val classloaderCache =
+  private val classloaderCache =
     new java.util.concurrent.ConcurrentHashMap[
       BridgeArtifact,
       (FilesInfo[ModifiedFileInfo], URLClassLoader)
     ]
 
-  private[this] def schemasTask(key: TaskKey[_]): Def.Initialize[Task[Set[File]]] = Def.task {
+  private def schemasTask(key: TaskKey[?]): Def.Initialize[Task[Set[File]]] = Def.task {
     val toInclude        = (key / includeFilter).value
     val toExclude        = (key / excludeFilter).value
     val processManifests = (key / PB.manifestProcessing).value
@@ -548,20 +556,20 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
     }
   }
 
-  private[this] def sourceGeneratorTask(key: TaskKey[_]): Def.Initialize[Task[Seq[File]]] =
+  private def sourceGeneratorTask(key: TaskKey[?]): Def.Initialize[Task[Seq[File]]] =
     Def.task {
       val log      = (key / streams).value.log
       val resolver = (key / PB.artifactResolver).value
-      val cache    = (key / PB.cacheClassLoaders).value && (key / PB.cacheArtifactResolution).value
-      val targets  = (key / PB.targets).value
-      val schemas  = schemasTask(key).value
+      val cache = (key / legacyCacheClassLoaders).value && (key / PB.cacheArtifactResolution).value
+      val targets = (key / PB.targets).value
+      val schemas = schemasTask(key).value
 
       // Include Scala binary version like "_2.11" for cross building.
       val cacheFile =
         (key / streams).value.cacheDirectory / s"protobuf_${scalaBinaryVersion.value}"
 
       val nativePlugins =
-        (ProtobufConfig / key / managedClasspath).value.filter(isNativePlugin _)
+        (ProtobufConfig / key / managedClasspath).value.filter(isNativePlugin)
 
       implicit val converter: FileConverter = fileConverter.value
 
@@ -652,7 +660,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
 
       def compileProto(): Set[File] = {
         val sandboxedLoader: BridgeArtifact => ClassLoader =
-          stampedClassLoadersByArtifact.mapValues(_._2)
+          artifact => stampedClassLoadersByArtifact(artifact)._2
         compile(
           (key / PB.runProtoc).value,
           schemas,
@@ -701,7 +709,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
       }
     }
 
-  private[this] def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
+  private def unpackDependenciesTask(key: TaskKey[UnpackedDependencies]) =
     Def.task {
       implicit val converter: FileConverter = fileConverter.value
       val extractedFiles                    = unpack(
@@ -733,7 +741,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
       ).distinct
     }
 
-  private[this] def filter: ScopeFilter =
+  private def filter: ScopeFilter =
     ScopeFilter(inDependencies(ThisProject, includeRoot = false), inConfigurations(Compile))
 
   private[sbtprotoc] def makeArtifact(f: BridgeArtifact): ModuleID = {
