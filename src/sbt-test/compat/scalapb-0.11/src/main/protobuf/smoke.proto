@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package repro;
+
+message Smoke {
+  string message = 1;
+}
