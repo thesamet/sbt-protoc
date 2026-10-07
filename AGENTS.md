@@ -1,3 +1,18 @@
+# Upstream dependency ownership
+
+When a compatibility fix belongs to an upstream dependency, prefer fixing and
+releasing that dependency, then upgrading it here, over adding a local shim.
+Check sibling repositories under `~/dev` before duplicating upstream behavior.
+For example, protoc-bridge owns the Java/Kotlin generators' suggested runtime
+dependencies; update those defaults there rather than special-casing generators
+in sbt-protoc. Preserve explicit user overrides and retain a consuming-build
+regression test when replacing a workaround with an upstream release.
+
+Before tagging or publishing an upstream release, verify its tests and binary
+compatibility. Confirm the release artifacts are published before updating this
+repository to consume them. Release and push actions still require authorization
+from the current task; this policy is not standing permission to publish.
+
 # Plugin compatibility policy
 
 This repository publishes an sbt plugin. Its compiler versions are constrained by
