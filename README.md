@@ -157,10 +157,15 @@ Additional options
 The options below need to be scoped to either `Compile` or `Test` (if unsure,
 you probably want `Compile`)
 
+The default protoc version is 3.25.9. The default `PB.gens.java` and
+`PB.gens.kotlin` targets also add their respective protobuf runtimes at 3.25.9.
+Explicit runtime selections such as `PB.gens.java("3.25.9")` are preserved;
+when overriding versions, keep the generated code and runtime compatible.
+
 Example settings:
 ```scala
 // Force the version for the protoc binary
-PB.protocVersion := "3.21.7"
+PB.protocVersion := "3.25.9"
 
 // Additional directories to search for imports:
 Compile / PB.includePaths ++= Seq(file("/some/other/path"))
@@ -216,8 +221,10 @@ PB.pythonExe := "/path/to/python.exe"
 // Use content-hash based caching instead of file timestamps.
 // This is useful in CI environments where file timestamps are not preserved
 // across jobs (e.g., git clone resets mtimes, CI artifact transfer via zip
-// loses timestamps). With this setting, protoc will only re-run when the
-// actual content of .proto files changes, not when their timestamps change.
+// loses timestamps). Changes to proto/include-file timestamps alone will
+// no longer rerun protoc. Options, generator changes and missing outputs
+// still invalidate the cache. Restore caches and outputs at the same paths;
+// sandboxed generator classpaths are still tracked by timestamp.
 // Note: PB.unpackDependencies reads PB.cacheStyle from the Compile scope only.
 // Setting Test / PB.cacheStyle affects protoc caching but not the unpacking
 // of protobuf-config dependencies.

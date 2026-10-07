@@ -1,13 +1,13 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 import scalapb.compiler.Version.scalapbVersion
 
-val Scala212 = "2.12.18"
-val Scala213 = "2.13.12"
+val Scala212 = "2.12.21"
+val Scala213 = "2.13.18"
 
 val sharedSettings = Seq(
   name                      := "example",
   version                   := "0.1.0",
-  scalaVersion              := "2.13.12",
+  scalaVersion              := Scala213,
   Compile / PB.protoSources := Seq((ThisBuild / baseDirectory).value / "src" / "main" / "protobuf"),
   Compile / PB.targets      := Seq(
     scalapb.gen() -> (Compile / sourceManaged).value / "protos"
@@ -25,7 +25,7 @@ lazy val example = crossProject(JSPlatform, JVMPlatform, NativePlatform)
   .settings(sharedSettings)
   .jsSettings(crossScalaVersions := Seq(Scala212, Scala213))
   .jvmSettings(crossScalaVersions := Seq(Scala212, Scala213))
-  .nativeSettings(crossScalaVersions := Seq("2.12.18", "2.13.12"))
+  .nativeSettings(crossScalaVersions := Seq(Scala212, Scala213))
 
 lazy val exampleJS     = example.js
 lazy val exampleJVM    = example.jvm

@@ -1,0 +1,20 @@
+# Restore the protobuf cache and generated outputs at the same paths, change
+# timestamps as CI checkout/artifact transfer would, then restart sbt.
+> protocGenerate
+> assertProtocCount 1
+> restoreArtifacts
+> reboot
+> protocGenerate
+> assertProtocCount 1
+$ exists generated/mypkg/FooOuterClass.java
+
+# Control: the same transfer must invalidate timestamp mode.
+$ touch mtime-mode
+> reload
+> protocGenerate
+> assertProtocCount 2
+> restoreArtifacts
+> reboot
+> protocGenerate
+> assertProtocCount 3
+$ exists generated/mypkg/FooOuterClass.java

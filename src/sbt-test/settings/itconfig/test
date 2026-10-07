@@ -12,7 +12,7 @@ $ absent target/scala-2.12/classes/multi/File3.class
 $ absent target/scala-2.12/src_managed/it/multi/File3.java
 $ absent target/scala-2.12/classes/multi/File3.class
 
-> it:compile
+> It / compile
 $ exists target/scala-2.12/src_managed/it/multi/File3.java
 $ exists target/scala-2.12/it-classes/multi/File3.class
 

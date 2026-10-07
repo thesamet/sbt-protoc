@@ -10,7 +10,12 @@
   artifact stamp order is now deterministic (previously relied on unstable
   HashMap iteration). Upgrading users will see a one-time spurious recompile
   on the first build after the upgrade regardless of which `cacheStyle` is
-  selected; subsequent builds cache normally. (#430, #431)
+  selected; subsequent builds cache normally. Switching modes invalidates
+  the inactive mode's snapshots, since both modes share generated outputs.
+  (#430, #431)
+
+## [1.1.0-RC1]
+* Add support for sbt 2
 
 ## [1.0.7]
 * Update default protoc to 3.21.7

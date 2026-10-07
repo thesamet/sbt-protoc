@@ -7,3 +7,7 @@ import "google/protobuf/timestamp.proto";
 message Bar {
   google.protobuf.Timestamp time = 1;
 }
+
+service BarService {
+  rpc GetBar(Bar) returns (Bar) {}
+}

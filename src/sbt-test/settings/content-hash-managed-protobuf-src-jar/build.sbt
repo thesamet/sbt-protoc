@@ -1,3 +1,4 @@
+import sbtcompat.PluginCompat._
 import sbtprotoc.ProtocPlugin.ProtobufSrcConfig
 
 Compile / PB.targets := Seq(
@@ -5,12 +6,15 @@ Compile / PB.targets := Seq(
 )
 
 Compile / PB.cacheStyle         := PB.CacheStyle.ContentHash
-Compile / PB.externalSourcePath := baseDirectory.value / "target" / "protobuf_external_src"
+PB.externalSourcePath := baseDirectory.value / "target" / "protobuf_external_src"
 
 val depJar = settingKey[File]("Path to the local protobuf-src dependency jar")
 depJar := baseDirectory.value / "deps" / "dep-src.jar"
 
-ProtobufSrcConfig / PB.unpackDependencies / managedClasspath := Seq(Attributed.blank(depJar.value))
+ProtobufSrcConfig / PB.unpackDependencies / managedClasspath := Def.uncached {
+  implicit val converter: xsbti.FileConverter = fileConverter.value
+  toAttributedFiles(Seq(depJar.value))
+}
 
 val writeDepJar = inputKey[Unit]("Writes the protobuf-src dependency jar")
 writeDepJar := {
@@ -19,10 +23,10 @@ writeDepJar := {
   val sourceDir = baseDirectory.value / "changes" / version
   val jar       = depJar.value
   IO.createDirectory(jar.getParentFile)
-  IO.zip(Path.allSubpaths(sourceDir).toSeq, jar)
+  IO.zip(Path.allSubpaths(sourceDir).toSeq, jar, None)
 }
 
-Compile / PB.runProtoc := {
+Compile / PB.runProtoc := Def.uncached {
   val original = (Compile / PB.runProtoc).value
   (args, extraEnv) => {
     ProtocCount.incrementAndGet()
@@ -39,7 +43,7 @@ assertProtocCount := {
 }
 
 val assertDepSourceGenerated = taskKey[Unit]("Assert protobuf-src dependency generated its own source")
-assertDepSourceGenerated := {
+assertDepSourceGenerated := Def.uncached {
   val generated = (Compile / sourceManaged).value / "dep" / "DepOuterClass.java"
   assert(generated.exists(), s"Expected generated source for protobuf-src dependency at $generated")
 }
@@ -51,7 +55,7 @@ assertDepSourceGenerated := {
 // "int32 age" is the v2-specific signature. Matching just "age" would yield
 // false positives because `package dep;` contains "age" as a substring.
 val assertExtractedDepIsV1 = taskKey[Unit]("Extracted dep.proto must match v1 (no age field)")
-assertExtractedDepIsV1 := {
+assertExtractedDepIsV1 := Def.uncached {
   val extracted = (Compile / PB.externalSourcePath).value / "dep" / "dep.proto"
   assert(extracted.exists(), s"Expected extracted file at $extracted")
   val content = IO.read(extracted)
@@ -62,7 +66,7 @@ assertExtractedDepIsV1 := {
 }
 
 val assertExtractedDepIsV2 = taskKey[Unit]("Extracted dep.proto must match v2 (has age field)")
-assertExtractedDepIsV2 := {
+assertExtractedDepIsV2 := Def.uncached {
   val extracted = (Compile / PB.externalSourcePath).value / "dep" / "dep.proto"
   assert(extracted.exists(), s"Expected extracted file at $extracted")
   val content = IO.read(extracted)

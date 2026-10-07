@@ -9,11 +9,26 @@ final class FilteringClassLoader(parent: ClassLoader, extraParentPrefixes: Seq[S
     "jdk.internal.reflect."
   ) ++ extraParentPrefixes
 
-  override def loadClass(name: String, resolve: Boolean): Class[_] = {
-    if (parentPrefixes.exists(name.startsWith _)) {
+  // The topmost non-bootstrap loader is the platform loader on Java 9+ and
+  // the extension loader on Java 8. Use Java 8 APIs to retain compatibility,
+  // and start above the system loader to keep application dependencies hidden.
+  private val platformClassLoader = {
+    @annotation.tailrec
+    def rootLoader(loader: ClassLoader): ClassLoader =
+      if (loader == null || loader.getParent == null) loader
+      else rootLoader(loader.getParent)
+
+    rootLoader(ClassLoader.getSystemClassLoader.getParent)
+  }
+
+  override def loadClass(name: String, resolve: Boolean): Class[?] = {
+    if (parentPrefixes.exists(name.startsWith)) {
       super.loadClass(name, resolve)
     } else {
-      null
+      try Class.forName(name, false, platformClassLoader)
+      catch {
+        case _: ClassNotFoundException => null
+      }
     }
   }
 }

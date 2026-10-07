@@ -15,8 +15,8 @@ $ absent target/scala-2.12/src_managed/test/multi/File3.java
 $ absent target/scala-2.12/classes/multi/File3.class
 
 > clean
-# don't test:compile to avoid triggering compile:protocGenerate, so that we can observe that generators/options in Compile were not used
-> test:protocGenerate
+# don't Test/compile to avoid triggering Compile/protocGenerate, so that we can observe that generators/options in Compile were not used
+> Test/protocGenerate
 
 $ absent target/scala-2.12/src_managed/main/multi/File1.java
 $ absent target/scala-2.12/src_managed/main/multi/File2.java

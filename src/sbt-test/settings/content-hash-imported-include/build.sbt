@@ -1,3 +1,5 @@
+import sbtcompat.PluginCompat._
+
 Compile / PB.targets := Seq(
   PB.gens.java -> (Compile / sourceManaged).value
 )
@@ -5,7 +7,7 @@ Compile / PB.targets := Seq(
 Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
 Compile / PB.includePaths += baseDirectory.value / "external"
 
-Compile / PB.runProtoc := {
+Compile / PB.runProtoc := Def.uncached {
   val original = (Compile / PB.runProtoc).value
   (args, extraEnv) => {
     ProtocCount.incrementAndGet()
