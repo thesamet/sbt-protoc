@@ -34,7 +34,7 @@ trait ProtocPluginCompat { self: ProtocPlugin.type =>
   ): Def.Classpath = Classpaths.managedJars(config, jarTypes, up)
 
   val additionalDependenciesValue = Def.setting {
-    val libs = (Compile / PB.targets).value.flatMap(t => suggestedDependencies(t.generator))
+    val libs = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
     platformDepsCrossVersion.?.value match {
       case Some(c) =>
         libs.map { lib =>

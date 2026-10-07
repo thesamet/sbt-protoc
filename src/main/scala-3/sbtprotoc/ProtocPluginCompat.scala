@@ -54,7 +54,7 @@ trait ProtocPluginCompat { self: ProtocPlugin.type =>
     Classpaths.managedJars(config, jarTypes, up, converter)
 
   val additionalDependenciesValue = Def.setting {
-    val libs = (Compile / PB.targets).value.flatMap(t => suggestedDependencies(t.generator))
+    val libs = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
     libs.map(makeArtifact)
   }
 }
