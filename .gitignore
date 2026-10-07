@@ -22,3 +22,4 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 metals.sbt
+.worktrees/
