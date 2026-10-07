@@ -258,20 +258,24 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
       PB.additionalDependencies := additionalDependenciesValue.value,
       libraryDependencies ++= PB.additionalDependencies.value,
       ProtobufConfig / classpathTypes += PB.ProtocPlugin,
-      ProtobufConfig / managedClasspath :=
+      // Hashing the entire UpdateReport for sbt 2's action cache costs more than
+      // selecting these classpaths. sbt2-compat makes uncached a no-op on sbt 1.
+      ProtobufConfig / managedClasspath := Def.uncached {
         classpathsManagedJars(
           ProtobufConfig,
           (ProtobufConfig / classpathTypes).value,
           (ProtobufConfig / update).value,
           fileConverter.value
-        ),
-      ProtobufSrcConfig / managedClasspath :=
+        )
+      },
+      ProtobufSrcConfig / managedClasspath := Def.uncached {
         classpathsManagedJars(
           ProtobufSrcConfig,
           (ProtobufSrcConfig / classpathTypes).value,
           (ProtobufSrcConfig / update).value,
           fileConverter.value
-        ),
+        )
+      },
       ivyConfigurations ++= Seq(ProtobufConfig, ProtobufSrcConfig),
       PB.protocDependency := {
         val version =
