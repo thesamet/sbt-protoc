@@ -4,9 +4,9 @@ import xsbti.FileConverter
 import sbt.util.CacheImplicits.{*, given}
 import sbt.librarymanagement.LibraryManagementCodec.{*, given}
 import sbtcompat.PluginCompat
-import sbtcompat.PluginCompat._
-import sbt.{given, _}
-import Keys._
+import sbtcompat.PluginCompat.*
+import sbt.{given, *}
+import Keys.*
 import java.io.{File, FileInputStream, IOException}
 
 import protocbridge.{DescriptorSetGenerator, SandboxedJvmGenerator, Target, ProtocRunner}
@@ -16,8 +16,8 @@ import sbt.plugins.JvmPlugin
 import java.net.URLClassLoader
 import java.util.jar.JarInputStream
 import sbt.librarymanagement.DependencyResolution
-import protocbridge.{Artifact => BridgeArtifact}
-import protocbridge.{SystemDetector => BridgeSystemDetector, FileCache, PluginGenerator}
+import protocbridge.Artifact as BridgeArtifact
+import protocbridge.{SystemDetector as BridgeSystemDetector, FileCache, PluginGenerator}
 import scala.concurrent.{Future, blocking}
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -677,7 +677,7 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
         )
       }
 
-      import CacheImplicits._
+      import CacheImplicits.*
       type Stamp = (Arguments, Seq[FilesInfo[ModifiedFileInfo]])
       val cachedCompile = Tracked.inputChanged[Stamp, Set[File]](
         cacheFile / "input"
