@@ -17,7 +17,8 @@ scalacOptions ++= {
   }
 }
 
-def sbt2 = "2.0.0"
+// Minimum supported sbt 2; raising this is a compatibility decision (see AGENTS.md).
+def sbt2 = "2.0.0" // scala-steward:off
 
 scalaVersion := "2.12.21"
 
@@ -58,7 +59,7 @@ scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
 pluginCrossBuild / sbtVersion := {
   scalaBinaryVersion.value match {
     case "2.12" =>
-      "1.9.9"
+      "1.9.9" // scala-steward:off
     case _ =>
       sbt2
   }
