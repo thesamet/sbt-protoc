@@ -218,6 +218,18 @@ PB.additionalDependencies := Nil
 // future version.
 PB.pythonExe := "/path/to/python.exe"
 
+// Use content-hash based caching instead of file timestamps.
+// This is useful in CI environments where file timestamps are not preserved
+// across jobs (e.g., git clone resets mtimes, CI artifact transfer via zip
+// loses timestamps). Changes to proto/include-file timestamps alone will
+// no longer rerun protoc. Options, generator changes and missing outputs
+// still invalidate the cache. Restore caches and outputs at the same paths;
+// sandboxed generator classpaths are still tracked by timestamp.
+// Note: PB.unpackDependencies reads PB.cacheStyle from the Compile scope only.
+// Setting Test / PB.cacheStyle affects protoc caching but not the unpacking
+// of protobuf-config dependencies.
+Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
+
 // Disables the manifest processing feature of sbt-protoc that automatically
 // adds option protos as a source file to protoc when `ScalaPB-Options-Proto`
 // is found in a dependency jar manifest. This setting is turned on by default,

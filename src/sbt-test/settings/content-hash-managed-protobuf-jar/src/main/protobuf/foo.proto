@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package mypkg;
+
+import "dep/dep.proto";
+
+message Foo {
+  dep.Dep value = 1;
+}

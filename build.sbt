@@ -74,6 +74,22 @@ scriptedSbt := {
   }
 }
 
+// Keep the scripted runner current when testing older sbt 1 consumers: the
+// fixtures use glob assertions that the 1.9.9 runner treats as literal paths.
+// Only the test harness changes; sbt-launch still follows scriptedSbt, and the
+// published plugin's minimum sbt version remains pluginCrossBuild / sbtVersion.
+libraryDependencies := {
+  val dependencies  = libraryDependencies.value
+  val runnerVersion = sbtVersion.value
+  if (scalaBinaryVersion.value == "2.12")
+    dependencies.map { dependency =>
+      if (dependency.organization == "org.scala-sbt" && dependency.name == "scripted-sbt")
+        dependency.withRevision(runnerVersion)
+      else dependency
+    }
+  else dependencies
+}
+
 inThisBuild(
   List(
     organization := "com.thesamet",
