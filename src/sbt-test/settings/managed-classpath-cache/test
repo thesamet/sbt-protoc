@@ -1,0 +1,15 @@
+$ touch descriptor.xml
+$ touch unrelated.jar
+$ touch include.jar
+$ touch source.jar
+
+# Warm both managedClasspath tasks, including their action caches on sbt 2.
+> selectClasspaths
+> selectClasspaths
+
+# The report and all files are unchanged. Hashing the whole report accesses the
+# unrelated file again even on a cache hit. This fails by assertion, not elapsed time.
+> resetProbe
+> checkClasspaths
+> resetProbe
+> checkClasspaths
