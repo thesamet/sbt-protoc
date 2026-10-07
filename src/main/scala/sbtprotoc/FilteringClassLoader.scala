@@ -10,7 +10,7 @@ final class FilteringClassLoader(parent: ClassLoader, extraParentPrefixes: Seq[S
   ) ++ extraParentPrefixes
 
   override def loadClass(name: String, resolve: Boolean): Class[?] = {
-    if (parentPrefixes.exists(name.startsWith _)) {
+    if (parentPrefixes.exists(name.startsWith)) {
       super.loadClass(name, resolve)
     } else {
       null

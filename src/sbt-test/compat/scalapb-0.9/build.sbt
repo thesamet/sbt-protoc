@@ -1,6 +1,6 @@
 import scalapb.compiler.Version.protobufVersion
 
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.18"
 
 Compile / PB.targets := Seq(scalapb.gen() -> (Compile / sourceManaged).value)
 

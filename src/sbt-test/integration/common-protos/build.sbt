@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := "2.13.4"
+ThisBuild / scalaVersion := "2.13.18"
 
 lazy val top = (project in file("top"))
   .settings(commonSettings)
