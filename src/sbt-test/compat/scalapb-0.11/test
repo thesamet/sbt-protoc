@@ -1,0 +1,7 @@
+# Exercise the public scalapb.gen() entry point, including build-plugin loading,
+# sandbox artifact selection, generation, compilation, and runtime compatibility.
+# ScalaPB 0.11.21 fixes the sbt 2 failures tracked in ScalaPB#2228.
+> compile
+$ exists target/**/src_managed/main/repro/smoke/Smoke.scala
+$ exists target/**/classes/repro/smoke/Smoke.class
+> runMain repro.Check
