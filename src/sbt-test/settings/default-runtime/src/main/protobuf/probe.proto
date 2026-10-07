@@ -1,0 +1,6 @@
+syntax = "proto3";
+package repro;
+message Probe {
+  string value = 1;
+  map<string, Probe> children = 2;
+}

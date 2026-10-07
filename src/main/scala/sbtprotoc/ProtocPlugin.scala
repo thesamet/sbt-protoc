@@ -180,9 +180,23 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
 
   override def globalSettings: Seq[Def.Setting[?]] = protobufGlobalSettings
 
+  private val defaultProtobufVersion = "3.25.9"
+
+  private[sbtprotoc] def suggestedDependencies(
+      generator: protocbridge.Generator
+  ): Seq[protocbridge.Artifact] = {
+    // Match the default instances by identity: java("3.24.4") is structurally
+    // equal to protoc-bridge's default, but is an explicit runtime selection.
+    if (generator eq protocbridge.gens.java)
+      protocbridge.gens.java(defaultProtobufVersion).suggestedDependencies
+    else if (generator eq protocbridge.gens.kotlin)
+      protocbridge.gens.kotlin(defaultProtobufVersion).suggestedDependencies
+    else generator.suggestedDependencies
+  }
+
   private def protobufGlobalSettings: Seq[Def.Setting[?]] =
     Seq(
-      PB.protocVersion                   := "3.21.7",
+      PB.protocVersion                   := defaultProtobufVersion,
       PB.deleteTargetDirectory           := true,
       PB.cacheArtifactResolution         := true,
       legacyCacheClassLoaders            := true,

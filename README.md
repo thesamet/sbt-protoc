@@ -157,10 +157,15 @@ Additional options
 The options below need to be scoped to either `Compile` or `Test` (if unsure,
 you probably want `Compile`)
 
+The default protoc version is 3.25.9. The default `PB.gens.java` and
+`PB.gens.kotlin` targets also add their respective protobuf runtimes at 3.25.9.
+Explicit runtime selections such as `PB.gens.java("3.25.9")` are preserved;
+when overriding versions, keep the generated code and runtime compatible.
+
 Example settings:
 ```scala
 // Force the version for the protoc binary
-PB.protocVersion := "3.21.7"
+PB.protocVersion := "3.25.9"
 
 // Additional directories to search for imports:
 Compile / PB.includePaths ++= Seq(file("/some/other/path"))
