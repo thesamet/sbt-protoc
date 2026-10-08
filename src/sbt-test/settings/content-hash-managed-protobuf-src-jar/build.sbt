@@ -5,8 +5,8 @@ Compile / PB.targets := Seq(
   PB.gens.java -> (Compile / sourceManaged).value
 )
 
-Compile / PB.cacheStyle         := PB.CacheStyle.ContentHash
-PB.externalSourcePath := baseDirectory.value / "target" / "protobuf_external_src"
+Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
+PB.externalSourcePath   := baseDirectory.value / "target" / "protobuf_external_src"
 
 val depJar = settingKey[File]("Path to the local protobuf-src dependency jar")
 depJar := baseDirectory.value / "deps" / "dep-src.jar"
@@ -42,7 +42,8 @@ assertProtocCount := {
   assert(actual == expected, s"Expected protoc count $expected but got $actual")
 }
 
-val assertDepSourceGenerated = taskKey[Unit]("Assert protobuf-src dependency generated its own source")
+val assertDepSourceGenerated =
+  taskKey[Unit]("Assert protobuf-src dependency generated its own source")
 assertDepSourceGenerated := Def.uncached {
   val generated = (Compile / sourceManaged).value / "dep" / "DepOuterClass.java"
   assert(generated.exists(), s"Expected generated source for protobuf-src dependency at $generated")

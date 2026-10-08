@@ -1,6 +1,6 @@
 package codegen
 
-import protocgen._
+import protocgen.*
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse.File
 
 object LocalGen extends CodeGenApp {
