@@ -1,14 +1,21 @@
-import sbt.librarymanagement.{ConfigRef, ConfigurationReport, ModuleReport, UpdateReport, UpdateStats}
+import sbt.librarymanagement.{
+  ConfigRef,
+  ConfigurationReport,
+  ModuleReport,
+  UpdateReport,
+  UpdateStats
+}
 import sbtcompat.PluginCompat.{toFile => compatFile, _}
 import sbtprotoc.ProtocPlugin.{ProtobufConfig, ProtobufSrcConfig}
 
 val fixtureReport    = settingKey[UpdateReport]("Report with an unrelated compile dependency")
 val selectClasspaths = taskKey[Unit]("Check the plugin selects the correct dependencies")
-val resetProbe       = taskKey[Unit]("Reset unrelated artifact access count after warming the cache")
-val checkClasspaths = taskKey[Unit]("Select protobuf dependencies without reading unrelated artifacts")
+val resetProbe      = taskKey[Unit]("Reset unrelated artifact access count after warming the cache")
+val checkClasspaths =
+  taskKey[Unit]("Select protobuf dependencies without reading unrelated artifacts")
 
 fixtureReport := {
-  val root = baseDirectory.value
+  val root                                             = baseDirectory.value
   def configReport(name: String, artifactName: String) = {
     val artifactFile = root / s"$artifactName.jar"
     ConfigurationReport(

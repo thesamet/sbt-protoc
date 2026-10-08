@@ -5,7 +5,7 @@ scalaVersion := "2.13.18"
 val scalaGen = Def.setting {
   val v = sbtBinaryVersion.value match {
     case "1.0" => "2.12"
-    case "2" => "3"
+    case "2"   => "3"
   }
   val scalapbVersion = "1.0.0-alpha.5"
   SandboxedJvmGenerator.forModule(

@@ -13,7 +13,7 @@ lazy val root = (project in file("."))
             "sub-a/target/scala-2.12/src_managed/main/sub/a/A.java",
             "sub-a/target/scala-2.12/classes/sub/a/A.class",
             "sub-b/target/scala-2.12/src_managed/main/sub/b/B.java",
-            "sub-b/target/scala-2.12/classes/sub/b/B.class",
+            "sub-b/target/scala-2.12/classes/sub/b/B.class"
           )
         case "2" =>
           Seq(
@@ -22,11 +22,11 @@ lazy val root = (project in file("."))
             "target/out/jvm/scala-2.12.21/root/src_managed/main/multi/File1.java",
             "target/out/jvm/scala-2.12.21/root/classes/multi/File1.class",
             "target/out/jvm/scala-2.12.21/b/src_managed/main/sub/b/B.java",
-            "target/out/jvm/scala-2.12.21/b/classes/sub/b/B.class",
+            "target/out/jvm/scala-2.12.21/b/classes/sub/b/B.class"
           )
       }
       files.foreach(f => assert(file(f).isFile, f))
-    },
+    }
   )
 
 lazy val a = (project in file("sub-a"))
@@ -37,7 +37,7 @@ lazy val b = (project in file("sub-b"))
   .settings(commonSettings: _*)
 
 lazy val commonSettings = Seq[SettingsDefinition](
-  scalaVersion := "2.12.21",
+  scalaVersion         := "2.12.21",
   Compile / PB.targets := Seq(PB.gens.java -> (Compile / sourceManaged).value),
   Test / PB.targets    := Seq(PB.gens.java -> (Test / sourceManaged).value),
   inConfig(Test)(sbtprotoc.ProtocPlugin.protobufConfigSettings),
