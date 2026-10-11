@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 object Count {
   private var count          = 0

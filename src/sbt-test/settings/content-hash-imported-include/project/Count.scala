@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 import java.util.concurrent.atomic.AtomicInteger
 
 object ProtocCount {
