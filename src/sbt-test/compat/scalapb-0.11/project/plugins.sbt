@@ -8,6 +8,9 @@
   else addSbtPlugin("com.thesamet" % "sbt-protoc" % pluginVersion)
 }
 
+// Exercise older ScalaPB generators with the current protoc-bridge.
+libraryDependencySchemes += "com.thesamet.scalapb" %% "protoc-bridge" % VersionScheme.Always
+
 // To reproduce the failure before ScalaPB#2228:
 // SCALAPB_TEST_VERSION=0.11.20 sbt "++ 3.x" "scripted compat/scalapb-0.11"
 // https://github.com/scalapb/ScalaPB/pull/2228

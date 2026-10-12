@@ -1,15 +1,24 @@
 name: Release
 
 on:
-  push:
-    branches: [master]
-    tags: ["v*"]
+  workflow_call:
+    secrets:
+      PGP_PASSPHRASE:
+        required: true
+      PGP_SECRET:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+      SONATYPE_USERNAME:
+        required: true
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
     - name: Scala caches
       uses: actions/cache@v5
       with:

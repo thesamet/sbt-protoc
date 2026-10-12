@@ -47,7 +47,7 @@ libraryDependencies ++= {
 }
 
 libraryDependencies ++= Seq(
-  "com.thesamet.scalapb" %% "protoc-bridge" % "0.9.11"
+  "com.thesamet.scalapb" %% "protoc-bridge" % "0.10.0"
 )
 
 enablePlugins(SbtPlugin)
@@ -55,6 +55,10 @@ enablePlugins(SbtPlugin)
 scriptedBufferLog := false
 
 scriptedLaunchOpts += s"-Dplugin.version=${version.value}"
+
+// Scripted uses its own control channel. Allow test JVMs to start without the
+// optional sbt boot socket when Windows cannot create its named-pipe lock.
+scriptedLaunchOpts += "-Dsbt.server.forcestart=true"
 
 pluginCrossBuild / sbtVersion := {
   scalaBinaryVersion.value match {
