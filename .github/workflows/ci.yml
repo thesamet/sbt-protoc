@@ -78,12 +78,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix:
+        java: [17, 21, 25]
     steps:
     - uses: actions/checkout@v6
     - uses: sbt/setup-sbt@v1
     - uses: actions/setup-java@v5
       with:
-        java-version: 17
+        java-version: ${{ matrix.java }}
         distribution: temurin
     - run: sbt "++ 3.x" test scriptedTestSbt2
 
