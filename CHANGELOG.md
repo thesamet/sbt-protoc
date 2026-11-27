@@ -1,6 +1,61 @@
 # Changelog
 
 ## [Unreleased]
+
+## [1.1.0-RC3]
+
+Changes since 1.1.0-RC2.
+
+### sbt and binary compatibility
+
+* **The sbt 2 artifact now requires sbt 2.1.0 or newer.** It is built with
+  Scala 3.9.0 LTS, up from sbt 2.0.0 / Scala 3.8.4 in RC2 (#484).
+  sbt 2.0.x cannot consume this artifact: sbt and Scala 3 minor-version
+  compatibility is backward, not forward, and an older compiler cannot read
+  the newer TASTy. Upgrade `project/build.properties` to `sbt.version=2.1.0`
+  or newer before using RC3 on sbt 2.
+* The sbt 1 artifact still supports **sbt 1.9.9 or newer** and is built with
+  Scala 2.12.21. The repository's own launcher is now sbt 1.13.1; this does
+  not raise the sbt 1 consumer minimum.
+* These Scala versions apply to plugins and build definitions, independently
+  of the application's `scalaVersion`. Applications do not need to move to
+  Scala 3.9 to use this plugin. Plugins depending on sbt-protoc must use the
+  matching sbt/Scala artifact; sbt 2 plugins consuming RC3 need a Scala 3.9+
+  compiler and an sbt 2.1+ baseline.
+* For ScalaPB on sbt 2, use **compilerplugin 0.11.21 or a compatible newer
+  release**. Earlier ScalaPB 0.11.x Scala 3 generators can fail with
+  `NoSuchMethodError` for `$init$` because they link against Scala 2.13-encoded
+  protoc-gen traits. ScalaPB 0.11.21 fixes this by using `protoc-gen_3`
+  ([ScalaPB#2228](https://github.com/scalapb/ScalaPB/pull/2228)); it is tested
+  here on both sbt 1 and sbt 2. Keep ScalaPB's generator and application
+  runtime versions aligned.
+* Upgrade `sbt2-compat` from 0.1.0 to 0.2.0 and `protoc-bridge` from 0.9.10
+  to 0.10.0. A build combining older generators with protoc-bridge 0.10.0 may
+  report an early-semver eviction conflict. For the tested ScalaPB 0.11.21
+  combination, add the following to `project/plugins.sbt` if needed; this
+  acknowledges that dependency pairing and does not fix a Scala 2/3 binary
+  mismatch:
+
+  ```scala
+  libraryDependencySchemes +=
+    "com.thesamet.scalapb" %% "protoc-bridge" % VersionScheme.Always
+  ```
+
+See [sbt's plugin compatibility guidance](https://www.scala-sbt.org/2.x/docs/en/reference/plugin.html)
+and [Scala's compatibility guarantees](https://www.scala-lang.org/development/).
+
+### Generation and caching
+
+* Update default protoc from 3.21.7 to **3.25.9**. Default Java and Kotlin
+  targets now select their corresponding protobuf runtimes at **3.25.9**
+  through protoc-bridge. Explicit generator runtime selections remain
+  honored. When overriding protoc or runtime versions, choose a compatible
+  pair; changing `PB.protocVersion` does not automatically change an explicit
+  runtime selection.
+* Fix sandboxed generators' access to JDK platform classes while preserving
+  isolation from the parent build's application dependencies.
+* Avoid sbt 2 action-caching of protobuf managed classpaths, eliminating
+  unnecessary hashing of unrelated dependency artifacts (#479).
 * Add opt-in `PB.cacheStyle` setting for content-hash based input tracking
   (`PB.CacheStyle.ContentHash`), useful in CI environments where file
   timestamps are not preserved across jobs. Default remains
@@ -13,6 +68,15 @@
   selected; subsequent builds cache normally. Switching modes invalidates
   the inactive mode's snapshots, since both modes share generated outputs.
   (#430, #431)
+
+### Build and validation
+
+* Upgrade scalafmt to 3.11.5 while preserving Scala 2 syntax in scripted
+  fixtures (#480), and update GitHub Actions dependencies (#489).
+* Validate sbt 1 consumers on 1.9.9, 1.10.7, 1.12.9, and 1.13.1 across Linux,
+  macOS, and Windows; validate sbt 2.1.0 on Java 17, 21, and 25.
+* Publishing runs only after the full compatibility CI matrix passes for
+  the release commit.
 
 ## [1.1.0-RC1]
 * Add support for sbt 2
