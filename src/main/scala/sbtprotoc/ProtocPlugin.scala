@@ -612,12 +612,17 @@ object ProtocPlugin extends AutoPlugin with ProtocPluginCompat {
             .filterNot(_ => toFile(a.data).getName.endsWith(".sh")) match {
             case None         => toFile(a.data).absolutePath
             case Some(linker) =>
-              IO.withTemporaryFile("nix", dep.name, keepFile = true) { f =>
-                f.deleteOnExit()
-                IO.write(f, s"""#!/bin/sh\n$linker ${toFile(a.data).absolutePath} "$$@"\n""")
-                f.setExecutable(true)
-                f.getAbsolutePath()
-              }
+              val command = Seq(linker, toFile(a.data).absolutePath)
+                .map(arg => "'" + arg.replace("'", "'\"'\"'") + "'")
+                .mkString(" ")
+              val script = s"""#!/bin/sh\n$command "$$@"\n"""
+              // The path is part of the generation cache key. Keep it stable until the
+              // linker or plugin changes, instead of invalidating every invocation.
+              val hash    = sbt.io.Hash.toHex(sbt.io.Hash(script.getBytes("UTF-8")))
+              val wrapper = cacheFile / "native-plugins" / hash / dep.name
+              if (!wrapper.isFile) IO.write(wrapper, script)
+              wrapper.setExecutable(true)
+              wrapper.getAbsolutePath()
           }
         }
         val suffixed = PB.targets.value.zipWithIndex.collect {

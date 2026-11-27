@@ -37,7 +37,8 @@ $ delete generated/mypkg/FooOuterClass.java
 $ exists generated/mypkg/FooOuterClass.java
 
 # Change protoc version — protoc MUST re-run (count: 3 -> 4)
-> 'set PB.protocVersion := "3.12.0"'
+# Use a version with native artifacts on every CI platform, including Apple Silicon.
+> 'set PB.protocVersion := "3.25.8"'
 > protocGenerate
 > assertProtocCount 4
 
