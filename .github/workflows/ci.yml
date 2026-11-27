@@ -82,11 +82,21 @@ jobs:
         java: [17, 21, 25]
     steps:
     - uses: actions/checkout@v7
-    - uses: sbt/setup-sbt@v1
     - uses: actions/setup-java@v6
       with:
         java-version: ${{ matrix.java }}
         distribution: temurin
+    - uses: sbt/setup-sbt@v1
+    # Reuse launcher and dependency downloads across the sbt 2 JDK matrix too.
+    # Cold launcher downloads have failed with Maven Central HTTP 429 responses.
+    - name: Mount caches
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.sbt
+          ~/.ivy2/cache
+          ~/.cache/coursier
+        key: ${{ runner.os }}-sbt-${{ hashFiles('**/*.sbt') }}
     - run: sbt "++ 3.x" test scriptedTestSbt2
 
   # Single final job for mergify.
