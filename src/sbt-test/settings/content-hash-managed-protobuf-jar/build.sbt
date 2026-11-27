@@ -5,8 +5,8 @@ Compile / PB.targets := Seq(
   PB.gens.java -> (Compile / sourceManaged).value
 )
 
-Compile / PB.cacheStyle          := PB.CacheStyle.ContentHash
-PB.externalIncludePath := baseDirectory.value / "target" / "protobuf_external"
+Compile / PB.cacheStyle := PB.CacheStyle.ContentHash
+PB.externalIncludePath  := baseDirectory.value / "target" / "protobuf_external"
 
 val depJar = settingKey[File]("Path to the local protobuf dependency jar")
 depJar := baseDirectory.value / "deps" / "dep.jar"

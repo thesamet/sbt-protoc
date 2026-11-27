@@ -33,10 +33,10 @@ val localGen = SandboxedJvmGenerator.forModule("LocalGen", DummyArtifact, "codeg
 lazy val api = (project in file("api"))
   .settings(
     Compile / PB.targets := Seq(
-      PB.gens.java -> (Compile / sourceManaged).value,
+      PB.gens.java                -> (Compile / sourceManaged).value,
       PB.gens.plugin("grpc-java") -> (Compile / sourceManaged).value,
-      scalapb.gen() -> (Compile / sourceManaged).value,
-      localGen      -> (Compile / sourceManaged).value,
+      scalapb.gen()               -> (Compile / sourceManaged).value,
+      localGen                    -> (Compile / sourceManaged).value,
       localGen -> (Compile / resourceManaged).value // use 2 generators with the same artifact to check dedup
     ),
     PB.additionalDependencies ++= Seq(
