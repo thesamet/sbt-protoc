@@ -5,6 +5,7 @@ import sbt.Classpaths
 import sbt.Def
 import sbt.UpdateReport
 import sbt.Compile
+import sbt.Test
 import sjsonnew.BasicJsonProtocol.*
 import sjsonnew.JsonFormat
 import protocbridge.Artifact as BridgeArtifact
@@ -34,8 +35,10 @@ trait ProtocPluginCompat { self: ProtocPlugin.type =>
   ): Def.Classpath = Classpaths.managedJars(config, jarTypes, up)
 
   val additionalDependenciesValue = Def.setting {
-    val libs = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
-    platformDepsCrossVersion.?.value match {
+    val compileLibs  = (Compile / PB.targets).value.flatMap(_.generator.suggestedDependencies)
+    val testLibs     = (Test / PB.targets).value.flatMap(_.generator.suggestedDependencies)
+    val crossVersion = platformDepsCrossVersion.?.value
+    def dependencies(libs: Seq[BridgeArtifact]) = crossVersion match {
       case Some(c) =>
         libs.map { lib =>
           val a = makeArtifact(lib)
@@ -47,5 +50,6 @@ trait ProtocPluginCompat { self: ProtocPlugin.type =>
       case None =>
         libs.map(makeArtifact)
     }
+    dependencies(compileLibs) ++ dependencies(testLibs).map(_ % Test)
   }
 }

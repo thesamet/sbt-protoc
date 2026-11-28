@@ -1,0 +1,5 @@
+> Test / protocGenerate
+$ exists target/**/src_managed/test/repro/smoke/Smoke.scala
+> Test / compile
+$ exists target/**/test-classes/repro/smoke/Smoke.class
+> checkClasspaths

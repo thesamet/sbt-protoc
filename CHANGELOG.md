@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+* Infer runtime dependencies from `Test / PB.targets` in Test scope, allowing
+  test-only protobuf builds without Compile targets or explicit runtime dependencies.
+  (scalapb/ScalaPB#1750)
 * Add opt-in `PB.cacheStyle` setting for content-hash based input tracking
   (`PB.CacheStyle.ContentHash`), useful in CI environments where file
   timestamps are not preserved across jobs. Default remains

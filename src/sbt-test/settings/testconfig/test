@@ -24,6 +24,10 @@ $ absent target/descriptor.pb
 $ exists target/scala-2.12/src_managed/test/multi/File3.java
 $ absent target/scala-2.12/src_managed/main/multi/File3.java
 
+# Compile after checking isolated generation, exercising shared runtime dependencies.
+> Test/compile
+$ exists target/scala-2.12/test-classes/multi/File3.class
+
 > clean
 
 $ absent target/scala-2.12/src_managed/test/multi/File3.java
